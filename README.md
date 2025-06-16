@@ -10,7 +10,8 @@ digital-twin-project/
 └── dashboard-frontend/  # React 대시보드 (포트: 5173)
 
 ## 기술 스택
-- **Backend**: Spring Boot 3.1.5, Java 17, Gradle
+- **Backend**: Spring Boot 3.1.5, Java 17, Gradle, node v22.16.0
 - **Data Collector**: Python 3.8+
 - **Frontend**: React 18, Vite, Tabler.io
 - **Database**: H2 (개발), MySQL (운영)
+node 
