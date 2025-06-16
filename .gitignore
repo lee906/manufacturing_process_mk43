@@ -1,0 +1,45 @@
+# Spring Boot (dashboard-backend)
+dashboard-backend/build/
+dashboard-backend/.gradle/
+dashboard-backend/out/
+dashboard-backend/bin/
+dashboard-backend/.settings/
+dashboard-backend/.project
+dashboard-backend/.classpath
+
+# Python (data-collector)
+data-collector/__pycache__/
+data-collector/*.pyc
+data-collector/*.pyo
+data-collector/.env
+data-collector/venv/
+data-collector/.pytest_cache/
+data-collector/logs/*.log
+
+# React (dashboard-frontend)
+dashboard-frontend/node_modules/
+dashboard-frontend/dist/
+dashboard-frontend/build/
+dashboard-frontend/.env
+dashboard-frontend/.env.local
+dashboard-frontend/.env.development.local
+dashboard-frontend/.env.test.local
+dashboard-frontend/.env.production.local
+
+# IDE 설정
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+*.log
+
+# 보안 관련
+*.key
+*.pem
+*.crt
+secrets/
