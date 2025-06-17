@@ -4,7 +4,11 @@ import Dashboard from './components/Dashboard'
 import Factory2D from './components/Factory2D'
 
 
+
+
+
 // 임시 컴포넌트들 - 실제 파일이 없을 경우 사용
+
 
 const Inventory = () => {
   return (
