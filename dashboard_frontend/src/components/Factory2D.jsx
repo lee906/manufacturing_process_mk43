@@ -12,7 +12,7 @@ const Factory2D = () => {
       
       <div className="col-sm-6 col-lg-8">
         <div className="card">
-          <div className="card-body" style={{ height: "100rem" }}>
+          <div className="card-body" style={{ height: "50rem" }}>
             
           </div>
         </div>
