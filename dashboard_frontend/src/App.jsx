@@ -2,7 +2,13 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
 import Factory2D from './components/Factory2D'
+<<<<<<< HEAD
 
+=======
+
+
+// 임시 컴포넌트들 - 실제 파일이 없을 경우 사용
+>>>>>>> upstream/HEAD
 
 const Inventory = () => {
   return (
