@@ -1,22 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './components/Dashboard'
+import Factory2D from './components/Factory2D'
 
-// 임시 컴포넌트들 - 실제 파일이 없을 경우 사용
-const Factory2D = () => {
-  return (
-    <div className="row g-3">
-      <div className="col-12">
-        <div className="card">
-          <div className="card-body">
-            <h3 className="card-title">디지털 트윈</h3>
-            <p className="text-secondary">Factory2D 페이지 (개발중)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const Inventory = () => {
   return (
