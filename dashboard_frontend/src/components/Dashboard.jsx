@@ -1,3 +1,5 @@
+import ProductionStatus from './ProductionStatus'
+
 const Dashboard = () => {
   return (
     <div className="row g-3">
@@ -9,11 +11,7 @@ const Dashboard = () => {
         </div>
       </div>
       <div className="col-sm-6 col-lg-4">
-        <div className="card">
-          <div className="card-body" style={{ height: "10rem" }}>
-            <h3 className="card-title">생산 현황</h3>
-          </div>
-        </div>
+        <ProductionStatus />
       </div>
       <div className="col-sm-6 col-lg-4">
         <div className="card">
