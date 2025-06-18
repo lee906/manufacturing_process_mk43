@@ -14,4 +14,15 @@ digital-twin-project/
 - **Data Collector**: Python 3.8+
 - **Frontend**: React 18, Vite, Tabler.io
 - **Database**: H2 (개발), MySQL (운영)
-node 
+
+## 사용방법
+- **Node.js 설치**: [Node.js 공식 사이트](https://nodejs.org/)에서 LTS 버전 다운로드 및 설치
+- 터미널에서 설치 확인 : node --version / npm --version
+
+- **의존성 패키지 설치**
+- dashboard_frontend에서 npm install
+- npm install react-router-dom
+- npm install apexcharts react-apexcharts
+
+- **개발 서버 실행**
+- npm run dev
