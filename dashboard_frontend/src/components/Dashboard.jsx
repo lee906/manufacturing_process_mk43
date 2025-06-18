@@ -1,14 +1,12 @@
 import ProductionStatus from './ProductionStatus'
+import PowerEfficiency from './PowerEfficiency'
+
 
 const Dashboard = () => {
   return (
     <div className="row g-3">
       <div className="col-sm-6 col-lg-4">
-        <div className="card">
-          <div className="card-body" style={{ height: "10rem" }}>
-            <h3 className="card-title">로봇 상태</h3>
-          </div>
-        </div>
+        <PowerEfficiency />
       </div>
       <div className="col-sm-6 col-lg-4">
         <ProductionStatus />
