@@ -100,7 +100,7 @@ const ProductionStatus = () => {
   return (
     <div className="card">
       <div className="card-body">
-        <h3 className="card-title">생산 현황</h3>
+        <h3 className="card-title">OEE</h3>
         <div id="chart-production-status" className="position-relative"></div>
         <div className="mt-3">
           <div className="row text-center">
