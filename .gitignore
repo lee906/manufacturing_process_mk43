@@ -43,3 +43,6 @@ Thumbs.db
 *.pem
 *.crt
 secrets/
+
+# Gradle properties (local environment specific)
+gradle.properties
