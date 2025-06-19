@@ -5,8 +5,9 @@ import FTYStatus from './KPI/FTYStatus';
 import ProductionTarget from './KPI/ProductionTarget';
 import HourlyProduction from './KPI/HourlyProduction';
 import CycleTime from './KPI/CycleTime';
-import RobotTable from './Robot/RobotTable';
-import InventoryStatus from './Inventory/InventoryStatus';
+import RobotTable from './Robot/RobotTables';
+import InventoryStatus from './Inventory/InventoryTables';
+import Danger from './alarm/Danger';
 
 const Dashboard = () => {
   return (
