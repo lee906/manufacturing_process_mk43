@@ -1,117 +1,89 @@
-import ProductionStatus from './KPI/ProductionStatus'
-import PowerEfficiency from './KPI/PowerEfficiency'
+import React from 'react';
+import ProductionStatus from './KPI/ProductionStatus';
+import OTDStatus from './KPI/OTDStatus';
+import FTYStatus from './KPI/FTYStatus';
+import ProductionTarget from './KPI/ProductionTarget';
+import HourlyProduction from './KPI/HourlyProduction';
+import CycleTime from './KPI/CycleTime';
+import RobotTable from './Robot/RobotTable';
+import InventoryStatus from './Inventory/InventoryStatus';
 
 const Dashboard = () => {
   return (
     <div className="row g-3">
-      {/* 첫 번째 큰 카드 (3x2 그리드를 포함) */}
-      <div className="col-sm-12 col-lg-8">
-        <div className="card">
+      {/* 왼쪽 생산 목표 카드 */}
+      <div className="col-sm-12 col-lg-4">
+        <div className="card h-100" >
           <div className="card-body">
             <div className="row g-3">
-              {/* 1행 1열 */}
-              <div className="col-sm-12 col-md-4">
-                <ProductionStatus />
+              <div className="col-sm-12">
+                <ProductionTarget />
               </div>
-              {/* 1행 2열 */}
+              <div className="col-6">
+                <HourlyProduction />
+              </div>
+              <div className="col-6">
+                <CycleTime />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 오른쪽 3*1 KPI 차트 카드 */}
+      <div className="col-sm-12 col-lg-8">
+        <div className="card h-100">
+          <div className="card-body">
+            <div className="row g-3">
+              {/* OEE */}
               <div className="col-sm-12 col-md-4">
                 <div className="card">
                   <div className="card-body">
-                    <h3 className="card-title">시간 당 생산 수</h3>
+                    <h3 className="card-title">OEE(설비 종합 효율)</h3>
+                    <ProductionStatus />
                   </div>
                 </div>
               </div>
-              {/* 1행 3열 */}
-              <div className="col-sm-12 col-md-4">
-                <div className="card">
-                  <div className="card-body">
-                    <h3 className="card-title">FTY(일발양품률)</h3>
-                  </div>
-                </div>
-              </div>
-              {/* 2행 1열 */}
+              {/* OTD */}
               <div className="col-sm-12 col-md-4">
                 <div className="card">
                   <div className="card-body">
                     <h3 className="card-title">OTD(정기납기율)</h3>
+                    <OTDStatus />
                   </div>
                 </div>
               </div>
-              {/* 2행 2열 */}
+              {/* FTY */}
               <div className="col-sm-12 col-md-4">
                 <div className="card">
                   <div className="card-body">
-                    <h3 className="card-title">Cycle Time</h3>
-                  </div>
-                </div>
-              </div>
-              {/* 2행 3열 */}
-              <div className="col-sm-12 col-md-4">
-                <div className="card">
-                  <div className="card-body">
-                    <h3 className="card-title">Lead Time</h3>
+                    <h3 className="card-title">FTY(일발양품률)</h3>
+                    <FTYStatus />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="col-sm-12 col-lg-4">
-  <div className="card">
-    <div className="card-body">
-      <div className="row g-3">
-        <div className="col-6">
-          <div className="card">
-            <div className="card-body">
-              <h3 className="card-title">현재 생산량</h3>
-            </div>
-          </div>
-        </div>
-        <div className="col-6">
-          <div className="card">
-            <div className="card-body">
-              <h3 className="card-title">목표 달성률</h3>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-      <div className="col-sm-12 col-lg-6">
-        <div className="card">
-          <div className="card-body" style={{ height: "20rem" }}>
-            <h3 className="card-title">설비 관리 KPI(개발중)</h3>
-            <h3 className="card-content">설비 가동률, MTBF, MTTR, 정지 시간</h3>
-          </div>
-        </div>
-      </div>
-      <div className="col-sm-12 col-lg-6">
-        <div className="card">
-          <div className="card-body" style={{ height: "20rem" }}>
-            <h3 className="card-title">품질 관리 KPI(개발중)</h3>
-            <h3 className="card-content">불량률, PPM, Scrap Rate, 재작업률</h3>
           </div>
         </div>
       </div>
       <div className="col-12">
         <div className="card">
-          <div className="card-body" style={{ height: "20rem" }}>
-            <h3 className="card-title">실시간 로봇 모니터링(개발중)</h3>
+          <div className="card-body">
+            <h3 className="card-title">실시간 로봇 모니터링</h3>
+            <RobotTable />
           </div>
         </div>
       </div>
       <div className="col-12">
         <div className="card">
-          <div className="card-body" style={{ height: "20rem" }}>
-            <h3 className="card-title">재고 현황(개발중)</h3>
+          <div className="card-body">
+            <h3 className="card-title">재고 현황</h3>
+            <InventoryStatus />
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;
