@@ -1,13 +1,12 @@
 import { useEffect, useRef } from 'react'
 import ApexCharts from 'apexcharts'
 
-const ProductionStatus = () => {
+const OTDStatus = () => {
   const chartRef = useRef(null)
 
   useEffect(() => {
-    // DOM 요소가 준비될 때까지 기다림
     const timer = setTimeout(() => {
-      const chartElement = document.getElementById('chart-production-status')
+      const chartElement = document.getElementById('chart-otd-status')
       
       if (!chartElement) {
         console.error("Chart element not found")
@@ -23,8 +22,8 @@ const ProductionStatus = () => {
             enabled: true
           },
         },
-        series: [61.2, 38.8],
-        labels: ["OEE", "미달성"],
+        series: [92.5, 7.5], // OTD 92.5% 가정
+        labels: ["OTD", "지연"],
         colors: ['#206bc4', '#e9ecef'],
         legend: {
           show: false
@@ -40,9 +39,9 @@ const ProductionStatus = () => {
                   color: '#206bc4',
                   fontSize: '18px',
                   fontWeight: 600,
-                  label: 'OEE',
+                  label: 'OTD',
                   formatter: function (w) {
-                    return '61.2%';
+                    return '92.5%';
                   }
                 }
               }
@@ -54,9 +53,9 @@ const ProductionStatus = () => {
           y: {
             formatter: function (val, opts) {
               if (opts.seriesIndex === 0) {
-                return '가동률: 85%<br/>성능률: 78%<br/>품질률: 92%<br/>OEE: ' + val + '%';
+                return '납기 준수: ' + val + '%';
               }
-              return val + '%';
+              return '납기 지연: ' + val + '%';
             }
           }
         },
@@ -98,8 +97,8 @@ const ProductionStatus = () => {
   }, []);
 
   return (
-    <div id="chart-production-status" className="position-relative"></div>
+    <div id="chart-otd-status" className="position-relative"></div>
   );
 };
 
-export default ProductionStatus;
+export default OTDStatus;
