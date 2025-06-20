@@ -7,7 +7,6 @@ import HourlyProduction from './KPI/HourlyProduction';
 import CycleTime from './KPI/CycleTime';
 import RobotTable from './Robot/RobotTables';
 import InventoryStatus from './Inventory/InventoryTables';
-import Danger from './alarm/Danger';
 
 const Dashboard = () => {
   return (

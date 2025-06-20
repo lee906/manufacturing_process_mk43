@@ -1,4 +1,4 @@
-import Factory2DTwin from "./Factory2DTwin";
+import Factory2DTwin from "./Twin/Factory2DTwin";
 
 const Factory2D = () => {
  
