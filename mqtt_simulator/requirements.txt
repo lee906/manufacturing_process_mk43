@@ -1,0 +1,2 @@
+# MQTT IoT 시뮬레이터 의존성
+paho-mqtt==2.1.0

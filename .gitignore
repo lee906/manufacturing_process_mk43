@@ -16,6 +16,11 @@ data-collector/venv/
 data-collector/.pytest_cache/
 data-collector/logs/*.log
 
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
+
 # React (dashboard-frontend)
 dashboard-frontend/node_modules/
 dashboard-frontend/dist/
@@ -45,4 +50,4 @@ Thumbs.db
 secrets/
 
 # Gradle properties (local environment specific)
-gradle.properties
+gradle.propertiesvenv/

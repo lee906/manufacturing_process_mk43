@@ -26,3 +26,27 @@ digital-twin-project/
 
 - **개발 서버 실행**
 - npm run dev
+
+
+- **IoT 신호 데이터**
+- mosquitto MQTT는 브로커 역할
+- mosquitto version 2.0.21
+- brew install mosquitto - 모스키토 설치
+- brew services start mosquitto - 모스키토를 서비스로 등록
+
+# 작업 시작할 때마다
+cd manufacturing_process/
+source venv/bin/activate - 가상환경 설치 후 실행
+
+# MQTT 시뮬레이터 실행
+cd mosquitto_MQTT/
+pip install -r requirements.txt - 한번만 진행
+python assembly_simulator.py
+
+# 데이터 수집기 실행 (다른 터미널)
+cd ../data_collector/
+pip install -r requirements.txt - 한번만 진행
+python main.py
+
+# 작업 완료 후
+deactivate
