@@ -1,0 +1,89 @@
+{
+  "mqtt": {
+    "broker": "localhost",
+    "port": 1883,
+    "qos": 1,
+    "topic_prefix": "factory/assembly"
+  },
+  "simulation": {
+    "interval": 2,
+    "variation_range": 0.08,
+    "anomaly_probability": 0.03,
+    "production_target": 120
+  },
+  "assembly_stations": {
+    "ROBOT_ARM_01": {
+      "process_type": "robot_assembly",
+      "location": "Assembly Line A - Station 1",
+      "description": "6축 로봇팔 - 부품 픽앤플레이스",
+      "sensors": {
+        "joint_position": {"min": 0, "max": 360, "optimal": 180, "unit": "degrees"},
+        "torque": {"min": 50, "max": 150, "optimal": 100, "unit": "Nm"},
+        "gripper_force": {"min": 10, "max": 80, "optimal": 45, "unit": "N"},
+        "cycle_time": {"min": 30, "max": 90, "optimal": 60, "unit": "seconds"},
+        "positioning_accuracy": {"min": 0.01, "max": 0.15, "optimal": 0.05, "unit": "mm"},
+        "temperature": {"min": 25, "max": 45, "optimal": 35, "unit": "celsius"}
+      }
+    },
+    "CONVEYOR_01": {
+      "process_type": "material_transport",
+      "location": "Assembly Line A - Transport",
+      "description": "컨베이어 벨트 - 부품 이송",
+      "sensors": {
+        "belt_speed": {"min": 0.1, "max": 2.0, "optimal": 1.2, "unit": "m/s"},
+        "motor_current": {"min": 2, "max": 15, "optimal": 8, "unit": "A"},
+        "vibration": {"min": 0.1, "max": 3.0, "optimal": 0.8, "unit": "mm/s"},
+        "load_weight": {"min": 0, "max": 50, "optimal": 25, "unit": "kg"},
+        "temperature": {"min": 20, "max": 60, "optimal": 40, "unit": "celsius"},
+        "noise_level": {"min": 45, "max": 75, "optimal": 60, "unit": "dB"}
+      }
+    },
+    "QUALITY_CHECK_01": {
+      "process_type": "quality_inspection",
+      "location": "Assembly Line A - Inspection",
+      "description": "비전 검사 시스템 - 조립 품질 확인",
+      "sensors": {
+        "camera_resolution": {"min": 720, "max": 4096, "optimal": 1920, "unit": "pixels"},
+        "inspection_time": {"min": 5, "max": 25, "optimal": 12, "unit": "seconds"},
+        "defect_detection_rate": {"min": 0.80, "max": 0.99, "optimal": 0.95, "unit": "ratio"},
+        "lighting_intensity": {"min": 100, "max": 1000, "optimal": 500, "unit": "lux"},
+        "focus_accuracy": {"min": 0.1, "max": 2.0, "optimal": 0.5, "unit": "mm"},
+        "processing_load": {"min": 10, "max": 90, "optimal": 50, "unit": "percent"}
+      }
+    },
+    "INVENTORY_01": {
+      "process_type": "inventory_management",
+      "location": "Assembly Line A - Warehouse",
+      "description": "자동 창고 시스템 - 부품 재고 관리",
+      "sensors": {
+        "stock_level": {"min": 0, "max": 1000, "optimal": 500, "unit": "pieces"},
+        "retrieval_time": {"min": 10, "max": 60, "optimal": 30, "unit": "seconds"},
+        "sorting_accuracy": {"min": 0.85, "max": 0.99, "optimal": 0.95, "unit": "ratio"},
+        "storage_efficiency": {"min": 0.60, "max": 0.95, "optimal": 0.80, "unit": "ratio"},
+        "system_temperature": {"min": 18, "max": 35, "optimal": 25, "unit": "celsius"},
+        "energy_consumption": {"min": 100, "max": 500, "optimal": 250, "unit": "kWh"}
+      }
+    }
+  },
+  "assembly_process": {
+    "parts_catalog": [
+      {"id": "BODY_PANEL", "weight": 15.5, "assembly_time": 45},
+      {"id": "ENGINE_MOUNT", "weight": 8.2, "assembly_time": 30},
+      {"id": "DOOR_FRAME", "weight": 12.0, "assembly_time": 60},
+      {"id": "INTERIOR_TRIM", "weight": 3.5, "assembly_time": 25},
+      {"id": "WIRING_HARNESS", "weight": 2.8, "assembly_time": 40}
+    ],
+    "assembly_sequence": [
+      "PICKUP_PART",
+      "POSITION_ALIGN", 
+      "FASTEN_BOLT",
+      "QUALITY_CHECK",
+      "MOVE_TO_NEXT"
+    ],
+    "quality_standards": {
+      "positioning_tolerance": 0.1,
+      "torque_specification": 85,
+      "assembly_time_limit": 120
+    }
+  }
+}
