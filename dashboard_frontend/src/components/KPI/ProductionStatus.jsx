@@ -1,11 +1,10 @@
 import { useEffect, useRef } from 'react'
 import ApexCharts from 'apexcharts'
 
-const ProductionStatus = () => {
+const ProductionStatus = ({ oee = 61.2 }) => {
   const chartRef = useRef(null)
 
   useEffect(() => {
-    // DOM 요소가 준비될 때까지 기다림
     const timer = setTimeout(() => {
       const chartElement = document.getElementById('chart-production-status')
       
@@ -14,18 +13,33 @@ const ProductionStatus = () => {
         return
       }
 
+      const oeeValue = parseFloat(oee);
+      const remaining = 100 - oeeValue;
+
+      // OEE 등급 계산
+      const getOEEGrade = (value) => {
+        if (value >= 85) return { grade: '우수', color: '#28a745' };
+        if (value >= 70) return { grade: '양호', color: '#ffc107' };
+        if (value >= 60) return { grade: '보통', color: '#fd7e14' };
+        return { grade: '개선필요', color: '#dc3545' };
+      };
+
+      const gradeInfo = getOEEGrade(oeeValue);
+
       const options = {
         chart: {
           type: "donut",
           fontFamily: 'inherit',
           height: 200,
           animations: {
-            enabled: true
+            enabled: true,
+            easing: 'easeinout',
+            speed: 800
           },
         },
-        series: [61.2, 38.8],
+        series: [oeeValue, remaining],
         labels: ["OEE", "미달성"],
-        colors: ['#206bc4', '#e9ecef'],
+        colors: [gradeInfo.color, '#e9ecef'],
         legend: {
           show: false
         },
@@ -37,12 +51,12 @@ const ProductionStatus = () => {
                 show: true,
                 total: {
                   show: true,
-                  color: '#206bc4',
+                  color: gradeInfo.color,
                   fontSize: '18px',
                   fontWeight: 600,
                   label: 'OEE',
                   formatter: function (w) {
-                    return '61.2%';
+                    return oeeValue.toFixed(1) + '%';
                   }
                 }
               }
@@ -54,9 +68,14 @@ const ProductionStatus = () => {
           y: {
             formatter: function (val, opts) {
               if (opts.seriesIndex === 0) {
-                return '가동률: 85%<br/>성능률: 78%<br/>품질률: 92%<br/>OEE: ' + val + '%';
+                // 가상의 OEE 구성요소 계산
+                const availability = Math.min(95, oeeValue + Math.random() * 10);
+                const performance = Math.min(95, oeeValue + Math.random() * 15);
+                const quality = Math.min(99, oeeValue + Math.random() * 20);
+                
+                return `가동률: ${availability.toFixed(1)}%<br/>성능률: ${performance.toFixed(1)}%<br/>품질률: ${quality.toFixed(1)}%<br/>OEE: ${val.toFixed(1)}%<br/>등급: ${gradeInfo.grade}`;
               }
-              return val + '%';
+              return `미달성: ${val.toFixed(1)}%`;
             }
           }
         },
@@ -95,10 +114,53 @@ const ProductionStatus = () => {
         chartRef.current = null;
       }
     };
-  }, []);
+  }, [oee]); // oee 값이 변경될 때마다 차트 업데이트
+
+  // OEE 등급 정보
+  const getOEEGrade = (value) => {
+    if (value >= 85) return { grade: '우수', color: 'text-success', bgColor: 'bg-success' };
+    if (value >= 70) return { grade: '양호', color: 'text-warning', bgColor: 'bg-warning' };
+    if (value >= 60) return { grade: '보통', color: 'text-info', bgColor: 'bg-info' };
+    return { grade: '개선필요', color: 'text-danger', bgColor: 'bg-danger' };
+  };
+
+  const gradeInfo = getOEEGrade(parseFloat(oee));
 
   return (
-    <div id="chart-production-status" className="position-relative"></div>
+    <div>
+      <div id="chart-production-status" className="position-relative"></div>
+      
+      {/* OEE 상세 정보 */}
+      <div className="mt-3">
+        <div className="row text-center">
+          <div className="col-6">
+            <div className="text-muted small">등급</div>
+            <div className={`fw-bold ${gradeInfo.color}`}>
+              {gradeInfo.grade}
+            </div>
+          </div>
+          <div className="col-6">
+            <div className="text-muted small">목표</div>
+            <div className="fw-bold text-primary">85%</div>
+          </div>
+        </div>
+        
+        {/* 진행률 바 */}
+        <div className="mt-2">
+          <div className="progress" style={{ height: '6px' }}>
+            <div 
+              className={`progress-bar ${gradeInfo.bgColor}`}
+              style={{ width: `${Math.min(parseFloat(oee), 100)}%` }}
+            ></div>
+          </div>
+          <div className="d-flex justify-content-between mt-1">
+            <small className="text-muted">0%</small>
+            <small className={gradeInfo.color}>{parseFloat(oee).toFixed(1)}%</small>
+            <small className="text-muted">100%</small>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

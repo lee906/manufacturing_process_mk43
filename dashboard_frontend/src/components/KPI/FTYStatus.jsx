@@ -1,17 +1,30 @@
 import { useEffect, useRef } from 'react'
 import ApexCharts from 'apexcharts'
 
-const FPYStatus = () => {
+const FTYStatus = ({ fty = 95.3 }) => {
   const chartRef = useRef(null)
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const chartElement = document.getElementById('chart-fpy-status')
+      const chartElement = document.getElementById('chart-fty-status')
       
       if (!chartElement) {
         console.error("Chart element not found")
         return
       }
+
+      const ftyValue = parseFloat(fty);
+      const defective = 100 - ftyValue;
+
+      // FTY 등급 계산
+      const getFTYGrade = (value) => {
+        if (value >= 98) return { grade: '우수', color: '#28a745' };
+        if (value >= 95) return { grade: '양호', color: '#20c997' };
+        if (value >= 90) return { grade: '보통', color: '#ffc107' };
+        return { grade: '개선필요', color: '#dc3545' };
+      };
+
+      const gradeInfo = getFTYGrade(ftyValue);
 
       const options = {
         chart: {
@@ -19,12 +32,14 @@ const FPYStatus = () => {
           fontFamily: 'inherit',
           height: 200,
           animations: {
-            enabled: true
+            enabled: true,
+            easing: 'easeinout',
+            speed: 800
           },
         },
-        series: [95.3, 4.7], // FPY 95.3% 가정
-        labels: ["FPY", "불량"],
-        colors: ['#206bc4', '#e9ecef'],
+        series: [ftyValue, defective],
+        labels: ["FTY", "불량"],
+        colors: [gradeInfo.color, '#e9ecef'],
         legend: {
           show: false
         },
@@ -36,12 +51,12 @@ const FPYStatus = () => {
                 show: true,
                 total: {
                   show: true,
-                  color: '#206bc4',
+                  color: gradeInfo.color,
                   fontSize: '18px',
                   fontWeight: 600,
-                  label: 'FPY',
+                  label: 'FTY',
                   formatter: function (w) {
-                    return '95.3%';
+                    return ftyValue.toFixed(1) + '%';
                   }
                 }
               }
@@ -53,9 +68,13 @@ const FPYStatus = () => {
           y: {
             formatter: function (val, opts) {
               if (opts.seriesIndex === 0) {
-                return '일발 양품: ' + val + '%';
+                const totalProduced = Math.floor(Math.random() * 200) + 800;
+                const goodParts = Math.floor(totalProduced * ftyValue / 100);
+                const defectiveParts = totalProduced - goodParts;
+                
+                return `일발 양품: ${val.toFixed(1)}%<br/>양품 수량: ${goodParts}개<br/>불량 수량: ${defectiveParts}개<br/>등급: ${gradeInfo.grade}`;
               }
-              return '불량: ' + val + '%';
+              return `불량률: ${val.toFixed(1)}%`;
             }
           }
         },
@@ -94,11 +113,54 @@ const FPYStatus = () => {
         chartRef.current = null;
       }
     };
-  }, []);
+  }, [fty]); // fty 값이 변경될 때마다 차트 업데이트
+
+  // FTY 등급 정보
+  const getFTYGrade = (value) => {
+    if (value >= 98) return { grade: '우수', color: 'text-success', bgColor: 'bg-success' };
+    if (value >= 95) return { grade: '양호', color: 'text-info', bgColor: 'bg-info' };
+    if (value >= 90) return { grade: '보통', color: 'text-warning', bgColor: 'bg-warning' };
+    return { grade: '개선필요', color: 'text-danger', bgColor: 'bg-danger' };
+  };
+
+  const gradeInfo = getFTYGrade(parseFloat(fty));
 
   return (
-    <div id="chart-fpy-status" className="position-relative"></div>
+    <div>
+      <div id="chart-fty-status" className="position-relative"></div>
+      
+      {/* FTY 상세 정보 */}
+      <div className="mt-3">
+        <div className="row text-center">
+          <div className="col-6">
+            <div className="text-muted small">등급</div>
+            <div className={`fw-bold ${gradeInfo.color}`}>
+              {gradeInfo.grade}
+            </div>
+          </div>
+          <div className="col-6">
+            <div className="text-muted small">목표</div>
+            <div className="fw-bold text-primary">98%</div>
+          </div>
+        </div>
+        
+        {/* 진행률 바 */}
+        <div className="mt-2">
+          <div className="progress" style={{ height: '6px' }}>
+            <div 
+              className={`progress-bar ${gradeInfo.bgColor}`}
+              style={{ width: `${Math.min(parseFloat(fty), 100)}%` }}
+            ></div>
+          </div>
+          <div className="d-flex justify-content-between mt-1">
+            <small className="text-muted">0%</small>
+            <small className={gradeInfo.color}>{parseFloat(fty).toFixed(1)}%</small>
+            <small className="text-muted">100%</small>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default FPYStatus;
+export default FTYStatus;
