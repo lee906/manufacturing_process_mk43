@@ -16,18 +16,16 @@ public class UserService {
     private PasswordEncoder passwordEncoder;
 
     public boolean register(UserDTO userDTO) {
-        if (userRepository.findByUsername(userDTO.getUsername()) != null) {
+        if (userRepository.findByUserName(userDTO.getUsername()) != null) {
             return false; // 이미 존재
         }
-        User user = new User();
-        user.setUsername(userDTO.getUsername());
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        User user = new User(null, userDTO.getUsername(), passwordEncoder.encode(userDTO.getPassword()));
         userRepository.save(user);
         return true;
     }
 
     public boolean login(UserDTO userDTO) {
-        User user = userRepository.findByUsername(userDTO.getUsername());
+        User user = userRepository.findByUserName(userDTO.getUsername());
         if (user == null) return false;
         return passwordEncoder.matches(userDTO.getPassword(), user.getPassword());
     }
