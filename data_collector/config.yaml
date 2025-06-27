@@ -3,6 +3,7 @@ mqtt:
   broker_host: "localhost"
   broker_port: 1883
   topics:
+    - "automotive/assembly/+/telemetry"
     - "factory/manufacturing/+/data"
   qos: 1
 
@@ -12,6 +13,13 @@ api:
     iot_data: "/api/iot-data"
     alerts: "/api/alerts"
   timeout: 5
+
+influxdb:
+  url: "http://localhost:8086"
+  token: "automotive-assembly-token"
+  org: "automotive"
+  bucket: "assembly_data"
+  enabled: true
 
 processing:
   batch_size: 100
