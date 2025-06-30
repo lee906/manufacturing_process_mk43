@@ -6,6 +6,7 @@ dashboard-backend/bin/
 dashboard-backend/.settings/
 dashboard-backend/.project
 dashboard-backend/.classpath
+dashboard-backend/src/main/resources/application.properties
 
 # Python (data-collector)
 data-collector/__pycache__/

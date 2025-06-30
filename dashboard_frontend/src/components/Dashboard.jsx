@@ -7,7 +7,7 @@ import HourlyProduction from './KPI/HourlyProduction';
 import CycleTime from './KPI/CycleTime';
 import RobotTables from './Robot/RobotTables';
 import InventoryStatus from './Inventory/InventoryTables';
-import dashboardService from '../service/dashboardSevice';
+import dashboardService from '../service/dashboardService';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
