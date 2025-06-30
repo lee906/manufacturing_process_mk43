@@ -51,3 +51,4 @@ secrets/
 
 # Gradle properties (local environment specific)
 gradle.propertiesvenv/
+gradle.properties
