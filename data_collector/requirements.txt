@@ -1,18 +1,9 @@
-# IoT 데이터 수집기 의존성
-# MQTT 통신
+# 기존 의존성
 paho-mqtt==1.6.1
-
-# HTTP API 통신
 requests==2.31.0
-
-# 설정 파일 처리
 PyYAML==6.0.1
+python-dotenv==1.0.0
 
-# 데이터 직렬화
-dataclasses-json==0.6.1
-
-# 스케줄링 (옵션)
-schedule==1.2.0
-
-# 터미널 컬러 출력
-colorama==0.4.6
+# 🆕 KPI 계산을 위한 추가 의존성  
+numpy==1.24.3          # 통계 계산
+pandas==2.0.3          # 데이터 처리 (선택사항)

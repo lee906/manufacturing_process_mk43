@@ -1,182 +1,87 @@
 """
-데이터 수집기 메인 실행 파일
-MQTT로부터 IoT 데이터를 수집하여 Spring Boot API로 전송
+Data Collector 메인 - KPI 계산 통합
 """
-
-import logging
 import signal
 import sys
-import time
-from datetime import datetime
-from colorama import init, Fore, Style
 from src.mqtt_client import MQTTClient
+from src.api_client import APIClient  
 from src.data_processor import DataProcessor
-from src.api_client import APIClient
+from src.kpi_processor import KPIProcessor  # 🆕 추가
 
-# 컬러 출력 초기화
-init(autoreset=True)
-
-class DataCollectorMain:
+class DataCollector:
     def __init__(self):
-        self.running = False
-        self.mqtt_client = None
-        self.data_processor = None
-        self.api_client = None
+        self.mqtt_client = MQTTClient()
+        self.api_client = APIClient()
+        self.data_processor = DataProcessor(self.api_client)
+        self.kpi_processor = KPIProcessor()  # 🆕 KPI 프로세서 추가
         
-        # 로깅 설정
-        self._setup_logging()
-        self.logger = logging.getLogger(__name__)
+        # MQTT 메시지 핸들러 등록
+        self.mqtt_client.add_message_handler(self.handle_mqtt_message)
         
-        # 통계
-        self.stats = {
-            "start_time": None,
-            "messages_received": 0,
-            "messages_processed": 0,
-            "api_calls_success": 0,
-            "api_calls_failed": 0
-        }
-        
-        # 시그널 핸들러 등록
+        # 시그널 핸들러
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
-    
-    def _setup_logging(self):
-        """로깅 설정"""
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.FileHandler('logs/data_collector.log'),
-                logging.StreamHandler()
-            ]
-        )
         
-        # logs 디렉토리 생성
-        import os
-        os.makedirs('logs', exist_ok=True)
-    
-    def initialize(self):
-        """데이터 수집기 초기화"""
+    def handle_mqtt_message(self, topic: str, payload: str):
+        """MQTT 메시지 처리 - 기존 + KPI 계산"""
         try:
-            print(f"{Fore.CYAN}🔧 데이터 수집기 초기화 중...{Style.RESET_ALL}")
-            
-            # API 클라이언트 초기화
-            self.api_client = APIClient("http://localhost:8080")
-            print(f"{Fore.GREEN}✅ API 클라이언트 초기화 완료{Style.RESET_ALL}")
-            
-            # 데이터 프로세서 초기화
-            self.data_processor = DataProcessor(self.api_client)
-            print(f"{Fore.GREEN}✅ 데이터 프로세서 초기화 완료{Style.RESET_ALL}")
-            
-            # MQTT 클라이언트 초기화
-            self.mqtt_client = MQTTClient()
-            self.mqtt_client.add_message_handler(self._handle_mqtt_message)
-            
-            if self.mqtt_client.connect():
-                print(f"{Fore.GREEN}✅ MQTT 클라이언트 연결 성공{Style.RESET_ALL}")
-                return True
-            else:
-                print(f"{Fore.RED}❌ MQTT 클라이언트 연결 실패{Style.RESET_ALL}")
-                return False
-                
-        except Exception as e:
-            print(f"{Fore.RED}❌ 초기화 실패: {e}{Style.RESET_ALL}")
-            self.logger.error(f"초기화 실패: {e}")
-            return False
-    
-    def start(self):
-        """데이터 수집 시작"""
-        if not self.initialize():
-            return
-        
-        try:
-            self.running = True
-            self.stats["start_time"] = datetime.now()
-            
-            print(f"\n{Fore.GREEN}🚀 데이터 수집기 시작!{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}📡 MQTT 구독: factory/manufacturing/+/data{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}🔗 API 엔드포인트: http://localhost:8080/api/iot-data{Style.RESET_ALL}")
-            print(f"{Fore.YELLOW}🛑 종료하려면 Ctrl+C를 누르세요{Style.RESET_ALL}\n")
-            
-            # MQTT 클라이언트 시작
-            self.mqtt_client.start_loop()
-            
-        except KeyboardInterrupt:
-            print(f"\n{Fore.YELLOW}⏹️  사용자 종료 요청{Style.RESET_ALL}")
-        except Exception as e:
-            print(f"\n{Fore.RED}❌ 데이터 수집 오류: {e}{Style.RESET_ALL}")
-            self.logger.error(f"데이터 수집 오류: {e}")
-        finally:
-            self.stop()
-    
-    def stop(self):
-        """데이터 수집 중지"""
-        print(f"{Fore.YELLOW}🛑 데이터 수집기 중지 중...{Style.RESET_ALL}")
-        
-        self.running = False
-        
-        if self.mqtt_client:
-            self.mqtt_client.stop()
-            print(f"{Fore.GREEN}✅ MQTT 클라이언트 중지 완료{Style.RESET_ALL}")
-        
-        # 최종 통계 출력
-        self._print_final_statistics()
-        
-        print(f"{Fore.GREEN}✅ 데이터 수집기 종료 완료{Style.RESET_ALL}")
-        self.logger.info("데이터 수집기 종료")
-    
-    def _handle_mqtt_message(self, topic: str, payload: str):
-        """MQTT 메시지 처리"""
-        try:
-            self.stats["messages_received"] += 1
-            
-            # 데이터 처리
+            # 1. 기존 데이터 처리 (원시 데이터 → Spring Boot)
             processed_data = self.data_processor.process_message(topic, payload)
             
-            if processed_data:
-                self.stats["messages_processed"] += 1
-                self.stats["api_calls_success"] += 1
+            # 2. 🆕 KPI 계산 (원시 데이터 → KPI → Spring Boot)
+            if topic.endswith(('/status', '/quality')):  # KPI 관련 토픽만
+                kpi_data = self.kpi_processor.process_mqtt_data(topic, payload)
+                if kpi_data:
+                    self._send_kpi_data(kpi_data)
+                    
+        except Exception as e:
+            print(f"❌ 메시지 처리 오류: {e}")
+    
+    def _send_kpi_data(self, kpi_data: dict):
+        """계산된 KPI 데이터를 Spring Boot로 전송"""
+        try:
+            response = self.api_client.session.post(
+                f"{self.api_client.base_url}/api/kpi/data",  # 🆕 KPI 전용 엔드포인트
+                json=kpi_data,
+                timeout=self.api_client.timeout
+            )
+            
+            if response.status_code == 200:
+                station_id = kpi_data.get('station_id', 'Unknown')
+                oee_value = kpi_data.get('oee', {}).get('value', 0)
+                print(f"✅ KPI 전송 성공: {station_id} (OEE: {oee_value}%)")
             else:
-                self.stats["api_calls_failed"] += 1
+                print(f"⚠️ KPI 전송 실패: {response.status_code}")
                 
         except Exception as e:
-            self.logger.error(f"메시지 처리 오류: {e}")
-            self.stats["api_calls_failed"] += 1
-    
-    def _print_final_statistics(self):
-        """최종 통계 출력"""
-        if not self.stats["start_time"]:
-            return
-        
-        runtime = datetime.now() - self.stats["start_time"]
-        
-        print(f"\n{Fore.CYAN}📊 === 최종 데이터 수집 통계 ==={Style.RESET_ALL}")
-        print(f"⏱️  총 실행 시간: {str(runtime).split('.')[0]}")
-        print(f"📨 수신 메시지: {self.stats['messages_received']}")
-        print(f"⚙️  처리된 메시지: {self.stats['messages_processed']}")
-        print(f"✅ API 호출 성공: {self.stats['api_calls_success']}")
-        print(f"❌ API 호출 실패: {self.stats['api_calls_failed']}")
-        
-        if self.stats["messages_received"] > 0:
-            success_rate = (self.stats["api_calls_success"] / self.stats["messages_received"]) * 100
-            print(f"📈 성공률: {success_rate:.1f}%")
-        
-        print(f"{Fore.CYAN}=============================={Style.RESET_ALL}\n")
+            print(f"❌ KPI 전송 오류: {e}")
     
     def _signal_handler(self, signum, frame):
-        """시그널 핸들러"""
-        print(f"\n{Fore.YELLOW}🛑 종료 신호 감지 (Signal: {signum}){Style.RESET_ALL}")
-        self.running = False
-
+        """종료 시그널 처리"""
+        print(f"\n📊 KPI 프로세서 종료 중...")
+        
+        # 최종 KPI 요약 출력
+        for station_id, metrics in self.kpi_processor.station_metrics.items():
+            print(f"📈 {station_id}: {metrics.total_cycles}사이클, {metrics.total_inspections}검사")
+        
+        self.mqtt_client.disconnect()
+        sys.exit(0)
 
 def main():
-    """메인 함수"""
-    print(f"{Fore.CYAN}🔧 IoT 데이터 수집기 v1.0{Style.RESET_ALL}")
-    print(f"{Fore.CYAN}Manufacturing Process Data Collector{Style.RESET_ALL}\n")
+    print("🔢 Data Collector with KPI Processing v2.0")
+    print("=" * 50)
     
-    collector = DataCollectorMain()
-    collector.start()
-
+    collector = DataCollector()
+    
+    if collector.mqtt_client.connect():
+        print("✅ MQTT 연결 성공")
+        print("🔢 KPI 실시간 계산 시작!")
+        print("📊 KPI 엔드포인트: /api/kpi/data")
+        print("🛑 종료하려면 Ctrl+C\n")
+        
+        collector.mqtt_client.start_loop()
+    else:
+        print("❌ MQTT 연결 실패")
 
 if __name__ == "__main__":
     main()
