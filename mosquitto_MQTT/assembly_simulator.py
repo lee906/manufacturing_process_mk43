@@ -16,10 +16,10 @@ from datetime import datetime
 
 # 프로젝트 모듈
 from utils.mqtt_publisher import MQTTPublisher
-from mosquitto_MQTT.assembly.robot import RobotArmSimulator
-from assembly.conveyor import ConveyorSimulator
-from assembly.quality_check import QualityCheckSimulator
-from assembly.inventory import InventorySimulator
+# from mosquitto_MQTT.assembly.robot import RobotArmSimulator
+# from assembly.conveyor import ConveyorSimulator
+# from assembly.quality_check import QualityCheckSimulator
+# from assembly.inventory import InventorySimulator
 
 # 컬러 출력 초기화
 init(autoreset=True)
