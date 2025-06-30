@@ -1,10 +1,17 @@
-# -*- coding: utf-8 -*-
 """
-Utils 패키지
-MQTT 통신 및 데이터 생성 유틸리티
+MQTT Simulator 유틸리티 패키지
+공통 기능 및 헬퍼 함수들 제공
 """
+
+__version__ = "2.0.0"
+__author__ = "Manufacturing IoT Team"
 
 from .mqtt_publisher import MQTTPublisher
-from .data_generator import SensorDataGenerator
+from .config_loader import ConfigLoader
+from .data_generator import DataGenerator
 
-__all__ = ["MQTTPublisher", "SensorDataGenerator"]
+__all__ = [
+    'MQTTPublisher',
+    'ConfigLoader', 
+    'DataGenerator'
+]

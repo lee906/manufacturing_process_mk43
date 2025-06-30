@@ -16,8 +16,9 @@ from datetime import datetime
 
 # 프로젝트 모듈
 from utils.mqtt_publisher import MQTTPublisher
+# 로봇 관련 파일이 없어서 임시로 주석 처리
 # from mosquitto_MQTT.assembly.robot import RobotArmSimulator
-# from assembly.conveyor import ConveyorSimulator
+# from mosquitto_MQTT.assembly.line_a.conveyor import ConveyorSimulator
 # from assembly.quality_check import QualityCheckSimulator
 # from assembly.inventory import InventorySimulator
 

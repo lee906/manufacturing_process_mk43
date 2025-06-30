@@ -3,8 +3,10 @@ mqtt:
   broker_host: "localhost"
   broker_port: 1883
   topics:
-    - "automotive/assembly/+/telemetry"
-    - "factory/manufacturing/+/data"
+    - "factory/+/telemetry"
+    - "factory/+/status" 
+    - "factory/+/sensors"
+    - "factory/+/quality"
   qos: 1
 
 api:

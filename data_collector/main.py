@@ -3,15 +3,24 @@ Data Collector 메인 - KPI 계산 통합
 """
 import signal
 import sys
+import yaml
 from src.mqtt_client import MQTTClient
 from src.api_client import APIClient  
 from src.data_processor import DataProcessor
 from src.kpi_processor import KPIProcessor  # 🆕 추가
 
 class DataCollector:
-    def __init__(self):
+    def __init__(self, config_path: str = "config.yaml"):
+        # 설정 로드
+        with open(config_path, 'r', encoding='utf-8') as f:
+            self.config = yaml.safe_load(f)
+        
+        # API 설정 업데이트 (KPI 엔드포인트 추가)
+        if 'kpi_data' not in self.config['api']['endpoints']:
+            self.config['api']['endpoints']['kpi_data'] = '/api/kpi/data'
+        
         self.mqtt_client = MQTTClient()
-        self.api_client = APIClient()
+        self.api_client = APIClient(self.config)
         self.data_processor = DataProcessor(self.api_client)
         self.kpi_processor = KPIProcessor()  # 🆕 KPI 프로세서 추가
         
