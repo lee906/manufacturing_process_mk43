@@ -41,12 +41,20 @@ source venv/bin/activate - 가상환경 설치 후 실행
 # MQTT 시뮬레이터 실행
 cd mosquitto_MQTT/
 pip install -r requirements.txt - 한번만 진행
-python assembly_simulator.py
+python run_simulation.py
 
 # 데이터 수집기 실행 (다른 터미널)
 cd ../data_collector/
 pip install -r requirements.txt - 한번만 진행
 python main.py
+
+# 대시보드 백엔드 (다른 터미널)
+cd dashboard_backend
+./gradlew bootRun
+
+# 대시보드 프론트엔데 (다른 터미널)
+cd dashboard_frontend
+npm run dev
 
 # 작업 완료 후
 deactivate

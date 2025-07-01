@@ -1,257 +1,144 @@
 """
-샤시 메리지 공정 시뮬레이터 (B02_CHASSIS)
+B02 샤시 메리지 시뮬레이터
+샤시 조립공정 - 차체 결합
+iot.md 기반 핵심 센서: 근접 센서, 토크 센서, 비전 센서, 레이저 거리 센서
 """
 
 import time
 import random
-import math
 from datetime import datetime
-from typing import Dict, Any, List
-from ..base_simulator import BaseStationSimulator
+from typing import Dict, Any
+from ..models.vehicle_models import create_vehicle_with_tracking, VehicleRFID, VehicleTracking
+from .base_simulator import BaseStationSimulator
 
-class ChassisMergeSimulator(BaseStationSimulator):
-    """샤시 메리지 공정 시뮬레이터"""
+class B02ChassisMergeSimulator(BaseStationSimulator):
+    """샤시 메리지 시뮬레이터 - 현대차 5종 기준"""
     
-    def __init__(self, station_id: str):
-        config = {
-            "cycle_time_base": 300,
-            "cycle_time_variance": 30,
-            "quality_params": {
-                "base_score": 0.94,
-                "variance": 0.06,
-                "defect_probability": 0.03
-            }
-        }
-        
+    def __init__(self, station_id: str = "B02_CHASSIS_MERGE", config: Dict[str, Any] = None):
         super().__init__(station_id, config)
         
-        # 샤시 메리지 단계
-        self.merge_steps = [
-            {"step": "샤시_정렬", "duration": 60},
-            {"step": "메인_결합", "duration": 120},
-            {"step": "용접_작업", "duration": 80},
-            {"step": "강도_검사", "duration": 30},
-            {"step": "마무리_정형", "duration": 10}
-        ]
+        self.merge_stages = ["FRONT_CHASSIS", "REAR_CHASSIS", "ENGINE_MOUNT", "TRANSMISSION_MOUNT"]
+        self.current_stage = 0
+        self.operation_phases = ["idle", "position_align", "merge_chassis", "torque_apply", "weight_check", "inspect"]
+        self.current_phase = "idle"
+        self.phase_start_time = time.time()
         
-        self.current_step_index = 0
-        self.step_start_time = time.time()
+        # 차량 정보 및 위치 추적
+        self.current_vehicle: VehicleRFID = None
+        self.vehicle_tracking: VehicleTracking = None
+        self.station_position = {"x": 350, "y": 80, "line": "B"}
         
-        # 샤시 특성
-        self.weld_points = 16
-        self.completed_welds = 0
-        self.alignment_tolerance = 0.5  # mm
+        self.target_torque = 180.0  # Nm
         
-        print(f"🏗️ 샤시 메리지 시뮬레이터 초기화: {station_id}")
+        print(f">> B02 샤시 메리지 시뮬레이터 시작됨")
+    
+    def _update_operation_phase(self):
+        current_time = time.time()
+        phase_duration = current_time - self.phase_start_time
+        
+        phase_durations = {
+            "idle": 5, "position_align": 45, "merge_chassis": 120,
+            "torque_apply": 60, "weight_check": 25, "inspect": 20
+        }
+        
+        current_duration = phase_durations.get(self.current_phase, 30)
+        
+        if phase_duration >= current_duration:
+            current_idx = self.operation_phases.index(self.current_phase)
+            if current_idx < len(self.operation_phases) - 1:
+                self.current_phase = self.operation_phases[current_idx + 1]
+            else:
+                self.current_stage = (self.current_stage + 1) % len(self.merge_stages)
+                if self.current_stage == 0:
+                    self._cycle_complete()
+                self.current_phase = "idle"
+            self.phase_start_time = current_time
+    
+    def _cycle_complete(self):
+        self.cycle_count += 1
+        self.current_vehicle, self.vehicle_tracking = create_vehicle_with_tracking(self.station_id)
+        print(f">> 새 차량 진입: {self.current_vehicle.model} {self.current_vehicle.color}")
+    
+    def _get_vehicle_position(self) -> Dict[str, Any]:
+        if self.current_vehicle and self.vehicle_tracking:
+            progress = (self.operation_phases.index(self.current_phase) / len(self.operation_phases)) * 100
+            return {
+                "station_position": self.station_position,
+                "vehicle_id": self.current_vehicle.vehicle_id,
+                "progress_in_station": round(progress, 1),
+                "line_position": f"B-{self.current_stage + 2}",
+                "next_station": "B03_MUFFLER"
+            }
+        return {}
     
     def generate_telemetry(self) -> Dict[str, Any]:
-        """텔레메트리 데이터 생성"""
-        current_step = self.merge_steps[self.current_step_index]
-        step_elapsed = time.time() - self.step_start_time
-        step_progress = min(1.0, step_elapsed / current_step["duration"])
+        self.update_cycle()
+        self._update_operation_phase()
+        
+        if not self.current_vehicle:
+            self.current_vehicle, self.vehicle_tracking = create_vehicle_with_tracking(self.station_id)
         
         return {
             "station_id": self.station_id,
             "timestamp": datetime.now().isoformat(),
-            "process": {
-                "current_step": current_step["step"],
-                "step_progress": round(step_progress * 100, 1),
-                "alignment_status": self._get_alignment_status(current_step["step"], step_progress),
-                "welding_progress": self._get_welding_progress(current_step["step"], step_progress),
-                "structural_integrity": self._assess_structural_integrity(step_progress)
+            "rfid": self.current_vehicle.to_dict(),
+            "tracking": self.vehicle_tracking.to_dict(),
+            "vehicle_position": self._get_vehicle_position(),
+            "operation": {
+                "phase": self.current_phase,
+                "current_stage": self.merge_stages[self.current_stage],
+                "progress": round((self.operation_phases.index(self.current_phase) / len(self.operation_phases)) * 100, 1)
             },
-            "robots": self._generate_dual_robot_data(current_step["step"], step_progress),
-            "sensors": self._generate_chassis_sensors(current_step["step"], step_progress),
-            "cycle_count": self.cycle_count
+            "sensors": {
+                "torque_sensor": {
+                    "applied_torque": round(self.target_torque + random.uniform(-15, 15), 2) if self.current_phase == "torque_apply" else round(random.uniform(0, 20), 2),
+                    "target_torque": self.target_torque,
+                    "unit": "Nm"
+                },
+                "weight_sensor": {
+                    "measured_weight": round(1250 + random.uniform(-50, 50), 1) if self.current_phase == "weight_check" else round(random.uniform(200, 800), 1),
+                    "target_weight": 1250.0,
+                    "unit": "kg"
+                }
+            },
+            "cycle_info": {
+                "cycle_count": self.cycle_count,
+                "cycle_time": round(time.time() - self.operation_start_time, 1),
+                "target_time": self.current_cycle_time,
+                "efficiency": round((self.current_cycle_time / max(1, time.time() - self.operation_start_time)) * 100, 1)
+            }
         }
     
     def generate_status(self) -> Dict[str, Any]:
-        """상태 데이터 생성"""
-        current_step = self.merge_steps[self.current_step_index]
-        step_elapsed = time.time() - self.step_start_time
-        
-        total_elapsed = step_elapsed + sum(step["duration"] for step in self.merge_steps[:self.current_step_index])
-        
         return {
             "station_id": self.station_id,
             "timestamp": datetime.now().isoformat(),
             "station_status": self.station_status,
-            "current_operation": f"샤시메리지_{current_step['step']}",
-            "cycle_time": total_elapsed,
+            "current_operation": f"{self.current_phase}_{self.merge_stages[self.current_stage]}",
+            "cycle_progress": round((self.operation_phases.index(self.current_phase) / len(self.operation_phases)) * 100, 1),
             "production_count": self.cycle_count,
-            "progress": min(100.0, (total_elapsed / self.cycle_time_base) * 100),
-            "target_cycle_time": self.cycle_time_base
+            "efficiency": round(random.uniform(92, 98), 1),
+            "automation_level": "FULLY_AUTO",
+            "operator_count": 0
         }
     
     def generate_quality(self) -> Dict[str, Any]:
-        """품질 데이터 생성"""
+        if not self.should_publish_quality():
+            return None
+            
         quality_score = self._generate_quality_score()
         passed = self._should_quality_pass(quality_score)
         
-        defects = []
-        if not passed:
-            defects = random.choices([
-                "용접_불량", "정렬_오차", "강도_부족", "치수_편차", "표면_결함"
-            ], k=random.randint(1, 2))
-        
         return {
             "station_id": self.station_id,
             "timestamp": datetime.now().isoformat(),
+            "vehicle_id": self.current_vehicle.vehicle_id if self.current_vehicle else None,
             "overall_score": quality_score,
             "passed": passed,
-            "defects_found": defects,
-            "inspection_time": round(time.time() - self.step_start_time, 1),
-            "structural_tests": {
-                "정렬_정밀도_확인": random.choice([True, True, True, False]),
-                "용접_품질_검사": random.choice([True, True, False]),
-                "구조_강도_테스트": random.choice([True, True, True, False])
-            }
-        }
-    
-    def generate_sensor_data(self) -> Dict[str, Any]:
-        """센서 데이터 생성"""
-        current_step = self.merge_steps[self.current_step_index]
-        step_progress = min(1.0, (time.time() - self.step_start_time) / current_step["duration"])
-        
-        return {
-            "station_id": self.station_id,
-            "timestamp": datetime.now().isoformat(),
-            "sensors": self._generate_chassis_sensors(current_step["step"], step_progress)
-        }
-    
-    def _get_alignment_status(self, current_step: str, step_progress: float) -> Dict[str, Any]:
-        """정렬 상태 반환"""
-        if current_step == "샤시_정렬":
-            deviation = self.alignment_tolerance * (1 - step_progress) + random.uniform(-0.1, 0.1)
-        else:
-            deviation = random.uniform(-0.05, 0.05)
-        
-        return {
-            "x_deviation": round(deviation, 3),
-            "y_deviation": round(deviation * 0.8, 3),
-            "z_deviation": round(deviation * 0.6, 3),
-            "tolerance": self.alignment_tolerance,
-            "status": "OK" if abs(deviation) <= self.alignment_tolerance else "OUT_OF_SPEC"
-        }
-    
-    def _get_welding_progress(self, current_step: str, step_progress: float) -> Dict[str, Any]:
-        """용접 진행 상태 반환"""
-        if current_step == "용접_작업":
-            completed = min(self.weld_points, int(step_progress * self.weld_points))
-        elif self.current_step_index > 2:
-            completed = self.weld_points
-        else:
-            completed = 0
-        
-        return {
-            "completed_welds": completed,
-            "total_welds": self.weld_points,
-            "current_weld_quality": random.choice(["EXCELLENT", "GOOD", "FAIR"]),
-            "completion_percentage": round((completed / self.weld_points) * 100, 1)
-        }
-    
-    def _assess_structural_integrity(self, step_progress: float) -> str:
-        """구조적 무결성 평가"""
-        if self.current_step_index < 2:
-            return "PREPARING"
-        elif step_progress < 0.7:
-            return "PARTIAL"
-        elif step_progress < 0.95:
-            return "GOOD"
-        else:
-            return "EXCELLENT"
-    
-    def _generate_dual_robot_data(self, current_step: str, step_progress: float) -> Dict[str, Any]:
-        """듀얼 로봇 데이터 생성"""
-        return {
-            "ROB_B02_001": {  # ABB IRB 8700 (메인 작업용)
-                "model": "ABB IRB 8700",
-                "type": "HEAVY_DUTY",
-                "position": self._calculate_heavy_duty_position(current_step, step_progress),
-                "joints": [round(10 * math.sin(step_progress * math.pi + i), 1) for i in range(6)],
-                "torques": [round(100 + 50 * step_progress, 1) for _ in range(6)],
-                "tcp_force": [50, 60, 800 + 200 * step_progress, 15, 20, 30],
-                "welding_current": 250 + 50 * step_progress if current_step == "용접_작업" else 0,
-                "temperature": 65 + 15 * step_progress,
-                "power": 12.5 + 5.5 * step_progress
+            "quality_checks": {
+                "chassis_alignment": random.uniform(0.90, 0.99)
             },
-            "ROB_B02_002": {  # FANUC M-900iB/700 (정밀 위치 조정용)
-                "model": "FANUC M-900iB/700",
-                "type": "PRECISION",
-                "position": self._calculate_precision_position(current_step, step_progress),
-                "joints": [round(5 * math.cos(step_progress * math.pi + i), 1) for i in range(6)],
-                "torques": [round(80 + 30 * step_progress, 1) for _ in range(6)],
-                "tcp_force": [30, 35, 600 + 100 * step_progress, 8, 12, 20],
-                "positioning_accuracy": round(0.01 + 0.02 * (1 - step_progress), 3),
-                "temperature": 58 + 12 * step_progress,
-                "power": 9.8 + 4.2 * step_progress
-            }
+            "defects": [],
+            "inspector": "AUTO_VISION_SYSTEM",
+            "rework_required": not passed
         }
-    
-    def _calculate_heavy_duty_position(self, current_step: str, step_progress: float) -> List[float]:
-        """중작업용 로봇 위치 계산"""
-        if current_step == "메인_결합":
-            return [2000 - 200 * step_progress, 1200, 1000 - 100 * step_progress, 0, -30, 0]
-        elif current_step == "용접_작업":
-            # 용접점들을 순차적으로 이동
-            weld_angle = step_progress * 2 * math.pi
-            return [1800 + 100 * math.cos(weld_angle), 1200 + 100 * math.sin(weld_angle), 900, 0, -45, weld_angle * 180 / math.pi]
-        else:
-            return [2000, 1200, 1200, 0, 0, 0]
-    
-    def _calculate_precision_position(self, current_step: str, step_progress: float) -> List[float]:
-        """정밀 조정용 로봇 위치 계산"""
-        if current_step == "샤시_정렬":
-            # 미세 조정 동작
-            return [1600 + 10 * math.sin(step_progress * 8 * math.pi), 
-                   1000 + 5 * math.cos(step_progress * 8 * math.pi), 
-                   1100, 0, -15, step_progress * 360]
-        else:
-            return [1600, 1000, 1100, 0, -15, 0]
-    
-    def _generate_chassis_sensors(self, current_step: str, step_progress: float) -> Dict[str, Any]:
-        """샤시 메리지 전용 센서 데이터"""
-        return {
-            "alignment_laser": {
-                "accuracy": round(0.01 + 0.005 * random.random(), 3),
-                "unit": "mm",
-                "status": "OK",
-                "target_accuracy": 0.01
-            },
-            "welding_current": {
-                "value": round(250 + 100 * step_progress + 25 * random.random() if current_step == "용접_작업" else 0, 1),
-                "unit": "A",
-                "status": "OK",
-                "target_current": 300.0
-            },
-            "gap_measurement": {
-                "gap_size": round(2.0 + 1.0 * random.random(), 2),
-                "unit": "mm",
-                "status": "OK",
-                "tolerance": "±1.0mm"
-            },
-            "stress_gauge": {
-                "stress_level": round(500 + 300 * step_progress + 50 * random.random(), 1),
-                "unit": "με",
-                "status": "OK",
-                "max_allowable": 2000
-            }
-        }
-    
-    def update_cycle(self):
-        """사이클 업데이트"""
-        super().update_cycle()
-        
-        current_time = time.time()
-        current_step = self.merge_steps[self.current_step_index]
-        step_elapsed = current_time - self.step_start_time
-        
-        if step_elapsed >= current_step["duration"]:
-            self.current_step_index += 1
-            
-            if self.current_step_index >= len(self.merge_steps):
-                self.current_step_index = 0
-                self.completed_welds = 0
-                print(f"🏗️ 샤시 메리지 사이클 #{self.cycle_count} 완료")
-            
-            self.step_start_time = current_time

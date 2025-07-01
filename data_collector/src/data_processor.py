@@ -22,7 +22,7 @@ class DataProcessor:
             processed_data = self._process_iot_data(raw_data, topic)
             
             # Spring Boot API로 전송 (실패해도 계속 진행)
-            success = self.api_client.send_data(processed_data)
+            success = self.api_client.send_iot_data(processed_data)
             
             if success:
                 self.processed_count += 1

@@ -88,5 +88,14 @@ class MQTTClient:
     
     def stop(self):
         """MQTT 클라이언트 중지"""
-        self.client.loop_stop()
-        self.client.disconnect()
+        try:
+            self.logger.info("🛑 MQTT 클라이언트 종료 중...")
+            self.client.loop_stop()
+            self.client.disconnect()
+            self.logger.info("✅ MQTT 클라이언트 정상 종료")
+        except Exception as e:
+            self.logger.error(f"❌ MQTT 클라이언트 종료 오류: {e}")
+    
+    def disconnect(self):
+        """MQTT 연결 해제 (별칭)"""
+        self.stop()

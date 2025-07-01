@@ -39,7 +39,7 @@ class DataCollector:
             
             # 2. 🆕 KPI 계산 (원시 데이터 → KPI → Spring Boot)
             if topic.endswith(('/status', '/quality')):  # KPI 관련 토픽만
-                kpi_data = self.kpi_processor.process_mqtt_data(topic, payload)
+                kpi_data = self.kpi_processor.process_mqtt_message(topic, payload)
                 if kpi_data:
                     self._send_kpi_data(kpi_data)
                     
@@ -73,7 +73,7 @@ class DataCollector:
         for station_id, metrics in self.kpi_processor.station_metrics.items():
             print(f"📈 {station_id}: {metrics.total_cycles}사이클, {metrics.total_inspections}검사")
         
-        self.mqtt_client.disconnect()
+        self.mqtt_client.stop()
         sys.exit(0)
 
 def main():
