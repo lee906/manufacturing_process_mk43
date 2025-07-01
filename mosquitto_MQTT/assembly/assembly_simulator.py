@@ -9,6 +9,10 @@ import signal
 import sys
 from typing import Dict, List
 from ..utils.mqtt_publisher import MQTTPublisher
+from ..utils.vehicle_tracker import VehicleTracker
+from ..utils.production_line_manager import ProductionLineManager
+from ..utils.supply_chain_simulator import SupplyChainSimulator
+from ..utils.robot_manager import RobotManager
 from .A_01_door_removal import A01DoorRemovalSimulator
 from .A_02_wiring import A02WiringSimulator
 from .A_03_headliner import A03HeadlinerSimulator
@@ -30,6 +34,10 @@ class AssemblyLineSimulator:
     
     def __init__(self, broker_host: str = "localhost", broker_port: int = 1883):
         self.mqtt_publisher = MQTTPublisher(broker_host, broker_port)
+        self.vehicle_tracker = VehicleTracker()
+        self.production_manager = ProductionLineManager()
+        self.supply_chain = SupplyChainSimulator()
+        self.robot_manager = RobotManager()
         self.running = False
         self.station_threads = []
         
@@ -86,6 +94,42 @@ class AssemblyLineSimulator:
             thread.start()
             self.station_threads.append(thread)
             print(f"🔧 {station_id} 스테이션 시작")
+        
+        # 차량 추적 스레드 시작
+        vehicle_thread = threading.Thread(
+            target=self._run_vehicle_tracking,
+            daemon=True
+        )
+        vehicle_thread.start()
+        self.station_threads.append(vehicle_thread)
+        print(f"🚗 차량 추적 시스템 시작")
+        
+        # 생산라인 관리 스레드 시작
+        production_thread = threading.Thread(
+            target=self._run_production_management,
+            daemon=True
+        )
+        production_thread.start()
+        self.station_threads.append(production_thread)
+        print(f"🏭 생산라인 관리자 시작")
+        
+        # 공급망 관리 스레드 시작
+        supply_thread = threading.Thread(
+            target=self._run_supply_chain_management,
+            daemon=True
+        )
+        supply_thread.start()
+        self.station_threads.append(supply_thread)
+        print(f"📦 공급망 관리자 시작")
+        
+        # 로봇 관리 스레드 시작
+        robot_thread = threading.Thread(
+            target=self._run_robot_management,
+            daemon=True
+        )
+        robot_thread.start()
+        self.station_threads.append(robot_thread)
+        print(f"🤖 로봇 관리자 시작")
         
         # 메인 루프
         try:
@@ -148,6 +192,158 @@ class AssemblyLineSimulator:
                 
             except Exception as e:
                 print(f"❌ {station_id} 시뮬레이션 오류: {e}")
+                time.sleep(5)  # 오류 시 잠시 대기
+    
+    def _run_vehicle_tracking(self):
+        """차량 추적 시스템 실행"""
+        last_update = 0
+        last_stats = 0
+        
+        while self.running:
+            try:
+                current_time = time.time()
+                
+                # 차량 위치 데이터 (3초마다)
+                if current_time - last_update >= 3:
+                    tracking_data = self.vehicle_tracker.get_vehicle_tracking_data()
+                    if tracking_data:
+                        topic = "factory/digital_twin/vehicle_tracking"
+                        self.mqtt_publisher.publish_data(topic, tracking_data)
+                    last_update = current_time
+                
+                # 생산 통계 (10초마다)
+                if current_time - last_stats >= 10:
+                    stats_data = self.vehicle_tracker.get_production_statistics()
+                    if stats_data:
+                        topic = "factory/digital_twin/production_stats"
+                        self.mqtt_publisher.publish_data(topic, stats_data)
+                    last_stats = current_time
+                
+                time.sleep(1)  # CPU 사용률 조절
+                
+            except Exception as e:
+                print(f"❌ 차량 추적 시스템 오류: {e}")
+                time.sleep(5)  # 오류 시 잠시 대기
+    
+    def _run_production_management(self):
+        """생산라인 관리 시스템 실행"""
+        last_update = 0
+        last_line_status = 0
+        
+        while self.running:
+            try:
+                current_time = time.time()
+                
+                # 생산라인 상태 업데이트 (1초마다)
+                if current_time - last_update >= 1:
+                    self.production_manager.update_station_states()
+                    
+                    # 각 스테이션에서 작업 시작 시도
+                    for station_id in self.stations.keys():
+                        if self.production_manager.can_start_work(station_id):
+                            # 차량 추적에서 해당 스테이션에 도착한 차량 찾기
+                            vehicles_at_station = self.vehicle_tracker.get_vehicle_by_station(station_id)
+                            for vehicle_data in vehicles_at_station:
+                                if vehicle_data.get("status") == "waiting":
+                                    vehicle_id = vehicle_data.get("vehicle_id")
+                                    if self.production_manager.start_work(station_id, vehicle_id):
+                                        break
+                    
+                    last_update = current_time
+                
+                # 생산라인 상태 발행 (5초마다)
+                if current_time - last_line_status >= 5:
+                    line_status = self.production_manager.get_line_status()
+                    if line_status:
+                        topic = "factory/production_line/status"
+                        self.mqtt_publisher.publish_data(topic, line_status)
+                    last_line_status = current_time
+                
+                time.sleep(0.5)  # CPU 사용률 조절
+                
+            except Exception as e:
+                print(f"❌ 생산라인 관리 시스템 오류: {e}")
+                time.sleep(5)  # 오류 시 잠시 대기
+    
+    def _run_supply_chain_management(self):
+        """공급망 관리 시스템 실행"""
+        last_update = 0
+        last_status_publish = 0
+        
+        while self.running:
+            try:
+                current_time = time.time()
+                
+                # 공급망 시뮬레이션 업데이트 (5초마다)
+                if current_time - last_update >= 5:
+                    self.supply_chain.update_simulation()
+                    last_update = current_time
+                
+                # 공급망 상태 발행 (15초마다)
+                if current_time - last_status_publish >= 15:
+                    supply_status = self.supply_chain.get_supply_status()
+                    if supply_status:
+                        topic = "factory/supply_chain/status"
+                        self.mqtt_publisher.publish_data(topic, supply_status)
+                    last_status_publish = current_time
+                
+                time.sleep(2)  # CPU 사용률 조절
+                
+            except Exception as e:
+                print(f"❌ 공급망 관리 시스템 오류: {e}")
+                time.sleep(5)  # 오류 시 잠시 대기
+    
+    def _run_robot_management(self):
+        """로봇 관리 시스템 실행"""
+        last_telemetry = 0
+        last_status = 0
+        last_summary = 0
+        
+        while self.running:
+            try:
+                current_time = time.time()
+                
+                # 로봇 텔레메트리 데이터 발행 (3초마다)
+                if current_time - last_telemetry >= 3:
+                    for station_id in self.stations.keys():
+                        robot_telemetry = self.robot_manager.get_robot_telemetry(station_id)
+                        if robot_telemetry:
+                            topic = f"factory/{station_id}/robots/telemetry"
+                            self.mqtt_publisher.publish_data(topic, {
+                                "station_id": station_id,
+                                "robots": robot_telemetry,
+                                "timestamp": time.time()
+                            })
+                    last_telemetry = current_time
+                
+                # 로봇 상태 데이터 발행 (8초마다)
+                if current_time - last_status >= 8:
+                    for station_id in self.stations.keys():
+                        robot_status = self.robot_manager.get_robot_status(station_id)
+                        collaboration_info = self.robot_manager.simulate_collaborative_work(station_id)
+                        
+                        if robot_status:
+                            topic = f"factory/{station_id}/robots/status"
+                            self.mqtt_publisher.publish_data(topic, {
+                                "station_id": station_id,
+                                "robots": robot_status,
+                                "collaboration": collaboration_info,
+                                "timestamp": time.time()
+                            })
+                    last_status = current_time
+                
+                # 전체 로봇 요약 정보 (20초마다)
+                if current_time - last_summary >= 20:
+                    robot_summary = self.robot_manager.get_all_robots_summary()
+                    if robot_summary:
+                        topic = "factory/robots/summary"
+                        self.mqtt_publisher.publish_data(topic, robot_summary)
+                    last_summary = current_time
+                
+                time.sleep(1)  # CPU 사용률 조절
+                
+            except Exception as e:
+                print(f"❌ 로봇 관리 시스템 오류: {e}")
                 time.sleep(5)  # 오류 시 잠시 대기
     
     def _print_status(self):

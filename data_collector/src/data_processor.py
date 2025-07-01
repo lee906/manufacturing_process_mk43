@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import datetime
 
 class DataProcessor:
@@ -42,23 +42,39 @@ class DataProcessor:
     def _process_iot_data(self, raw_data: Dict[str, Any], topic: str) -> Dict[str, Any]:
         """IoT 데이터 정제 및 가공"""
         
-        # 토픽에서 스테이션 ID 추출
+        # 토픽 파싱 및 데이터 타입 식별
         topic_parts = topic.split('/')
-        station_id = topic_parts[2] if len(topic_parts) > 2 else "UNKNOWN"
+        data_category = self._identify_data_category(topic_parts)
+        
+        # 토픽에서 스테이션 ID 추출
+        if len(topic_parts) >= 3 and topic_parts[1] not in ["digital_twin", "production_line", "supply_chain", "robots"]:
+            station_id = topic_parts[1]  # factory/A01_DOOR/telemetry
+        else:
+            station_id = raw_data.get("station_id", "SYSTEM")
         
         # 기본 구조 생성
         processed_data = {
             "stationId": raw_data.get("station_id", station_id),
             "timestamp": raw_data.get("timestamp", datetime.now().isoformat()),
-            "processType": raw_data.get("process_type", "unknown"),
-            "location": raw_data.get("location", "Unknown Location"),
-            "sensors": raw_data.get("sensors", {}),
-            "production": raw_data.get("production", {}),
-            "quality": raw_data.get("quality", {}),
-            "alerts": raw_data.get("alerts", {}),
-            "processedAt": datetime.now().isoformat(),
-            "topic": topic
+            "dataCategory": data_category,
+            "topic": topic,
+            "processedAt": datetime.now().isoformat()
         }
+        
+        # 데이터 카테고리별 처리
+        if data_category == "station_data":
+            self._process_station_data(processed_data, raw_data)
+        elif data_category == "vehicle_tracking":
+            self._process_vehicle_tracking_data(processed_data, raw_data)
+        elif data_category == "robot_data":
+            self._process_robot_data(processed_data, raw_data)
+        elif data_category == "production_line":
+            self._process_production_line_data(processed_data, raw_data)
+        elif data_category == "supply_chain":
+            self._process_supply_chain_data(processed_data, raw_data)
+        else:
+            # 기본 처리 (기존 로직)
+            self._process_legacy_data(processed_data, raw_data)
         
         # 특화 데이터 통합
         if "robot_specific" in raw_data:
@@ -100,6 +116,107 @@ class DataProcessor:
             metrics["qualityIndex"] = quality["overall_score"]
         
         return metrics
+    
+    def _identify_data_category(self, topic_parts: List[str]) -> str:
+        """토픽 기반 데이터 카테고리 식별"""
+        if len(topic_parts) < 2:
+            return "unknown"
+        
+        # factory/digital_twin/vehicle_tracking
+        if len(topic_parts) >= 3 and topic_parts[1] == "digital_twin":
+            return "vehicle_tracking"
+        
+        # factory/production_line/status
+        elif len(topic_parts) >= 3 and topic_parts[1] == "production_line":
+            return "production_line"
+        
+        # factory/supply_chain/status
+        elif len(topic_parts) >= 3 and topic_parts[1] == "supply_chain":
+            return "supply_chain"
+        
+        # factory/robots/summary
+        elif len(topic_parts) >= 3 and topic_parts[1] == "robots":
+            return "robot_summary"
+        
+        # factory/A01_DOOR/robots/telemetry
+        elif len(topic_parts) >= 4 and topic_parts[2] == "robots":
+            return "robot_data"
+        
+        # factory/A01_DOOR/telemetry (기존 스테이션 데이터)
+        elif len(topic_parts) >= 3:
+            return "station_data"
+        
+        return "unknown"
+    
+    def _process_station_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """스테이션 센서 데이터 처리"""
+        processed_data.update({
+            "processType": raw_data.get("process_type", "assembly"),
+            "location": raw_data.get("location", "Assembly Line"),
+            "sensors": raw_data.get("sensors", {}),
+            "production": raw_data.get("production", {}),
+            "quality": raw_data.get("quality", {}),
+            "alerts": raw_data.get("alerts", {})
+        })
+    
+    def _process_vehicle_tracking_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """차량 추적 데이터 처리"""
+        processed_data.update({
+            "vehicleTracking": {
+                "totalVehicles": raw_data.get("total_vehicles", 0),
+                "activeVehicles": raw_data.get("active_vehicles", 0),
+                "vehicles": raw_data.get("vehicles", []),
+                "stationSequence": raw_data.get("station_sequence", []),
+                "stationPositions": raw_data.get("station_positions", {})
+            }
+        })
+    
+    def _process_robot_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """로봇 데이터 처리"""
+        processed_data.update({
+            "robotData": {
+                "robots": raw_data.get("robots", []),
+                "collaboration": raw_data.get("collaboration", {}),
+                "stationId": raw_data.get("station_id")
+            }
+        })
+    
+    def _process_production_line_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """생산라인 데이터 처리"""
+        processed_data.update({
+            "productionLine": {
+                "shiftProgress": raw_data.get("shift_progress", 0),
+                "currentProduction": raw_data.get("current_production", 0),
+                "dailyTarget": raw_data.get("daily_target", 0),
+                "achievementRate": raw_data.get("achievement_rate", 0),
+                "totalWip": raw_data.get("total_wip", 0),
+                "stations": raw_data.get("stations", {}),
+                "lineEfficiency": raw_data.get("line_efficiency", 0)
+            }
+        })
+    
+    def _process_supply_chain_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """공급망 데이터 처리"""
+        processed_data.update({
+            "supplyChain": {
+                "inventorySummary": raw_data.get("inventory_summary", {}),
+                "totalParts": raw_data.get("total_parts", 0),
+                "activeOrders": raw_data.get("active_orders", 0),
+                "parts": raw_data.get("parts", []),
+                "suppliers": raw_data.get("suppliers", {})
+            }
+        })
+    
+    def _process_legacy_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
+        """기존 데이터 구조 처리 (하위 호환성)"""
+        processed_data.update({
+            "processType": raw_data.get("process_type", "unknown"),
+            "location": raw_data.get("location", "Unknown Location"),
+            "sensors": raw_data.get("sensors", {}),
+            "production": raw_data.get("production", {}),
+            "quality": raw_data.get("quality", {}),
+            "alerts": raw_data.get("alerts", {})
+        })
     
     def get_statistics(self) -> Dict[str, Any]:
         """처리 통계 반환"""

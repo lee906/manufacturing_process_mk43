@@ -44,6 +44,11 @@ dashboard-frontend/.env.production.local
 Thumbs.db
 *.log
 
+# 임시 파일
+*.tmp
+.tmp
+tmp/
+
 # 보안 관련
 *.key
 *.pem

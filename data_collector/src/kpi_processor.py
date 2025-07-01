@@ -59,12 +59,28 @@ class KPIProcessor:
     def process_mqtt_message(self, topic: str, payload: str) -> Dict[str, Any]:
         """MQTT 메시지를 받아서 KPI 계산"""
         try:
-            # 토픽 파싱: factory/A01_DOOR/telemetry
+            # 토픽 파싱
             topic_parts = topic.split('/')
-            if len(topic_parts) != 3:
+            
+            # 스테이션별 데이터만 KPI 계산 (factory/A01_DOOR/telemetry)
+            if len(topic_parts) < 3:
                 return {}
             
-            _, station_id, data_type = topic_parts
+            # 시스템 레벨 토픽은 KPI 계산에서 제외
+            if topic_parts[1] in ["digital_twin", "production_line", "supply_chain", "robots"]:
+                return {}
+            
+            # 로봇 데이터는 별도 처리 (factory/A01_DOOR/robots/telemetry)
+            if len(topic_parts) >= 4 and topic_parts[2] == "robots":
+                return {}
+            
+            # 스테이션 데이터 처리 (factory/A01_DOOR/telemetry)
+            if len(topic_parts) >= 3:
+                station_id = topic_parts[1]
+                data_type = topic_parts[2]
+            else:
+                return {}
+            
             data = json.loads(payload)
             
             # 스테이션 메트릭 초기화
