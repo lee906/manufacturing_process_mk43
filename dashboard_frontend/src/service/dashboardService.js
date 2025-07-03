@@ -42,7 +42,9 @@ class DashboardService {
       const dashboardData = await this.getFactorySummary();
       this.notify('dashboard', dashboardData);
       
-      const stationsData = await this.getLatestKPIs();
+      const kpiResponse = await this.getLatestKPIs();
+      // 백엔드 응답에서 stations 배열 추출
+      const stationsData = kpiResponse.stations || [];
       this.notify('stations', stationsData);
       
     } catch (error) {

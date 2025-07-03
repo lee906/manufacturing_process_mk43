@@ -1,60 +1,95 @@
-# 자동차 의장공장 디지털 트윈 시스템
+# 현대차 의장공정 디지털 트윈 시스템
 
 ## 프로젝트 개요
-자동차 제조 의장공장의 실시간 모니터링 및 관리를 위한 디지털 트윈 시스템
+현대차 의장공정의 실시간 모니터링 및 관리를 위한 디지털 트윈 시스템
 
 ## 시스템 구성
-digital-twin-project/
-├── dashboard-backend/    # Spring Boot API 서버 (포트: 8080)
-├── data-collector/      # Python 데이터 수집 서버 (포트: 8082)
-└── dashboard-frontend/  # React 대시보드 (포트: 5173)
+```
+manufacturing_process/
+├── dashboard_backend/     # Spring Boot API 서버 (포트: 8080)
+├── dashboard_frontend/    # React 대시보드 (포트: 5173)
+├── data_collector/        # Python 데이터 수집 서버 (포트: 8082)
+├── mosquitto_MQTT/        # MQTT 시뮬레이터 (15개 스테이션)
+└── venv/                  # Python 가상환경
+```
 
 ## 기술 스택
-- **Backend**: Spring Boot 3.1.5, Java 17, Gradle, node v22.16.0
-- **Data Collector**: Python 3.8+
+- **Backend**: Spring Boot 3.1.5, Java 17, Gradle
 - **Frontend**: React 18, Vite, Tabler.io
-- **Database**: H2 (개발), MySQL (운영)
+- **Data Collector**: Python 3.8+, MQTT, InfluxDB
+- **Database**: PostgreSQL (메인), InfluxDB 3.x (시계열)
+- **MQTT Broker**: Mosquitto 2.0.21
 
-## 사용방법
-- **Node.js 설치**: [Node.js 공식 사이트](https://nodejs.org/)에서 LTS 버전 다운로드 및 설치
-- 터미널에서 설치 확인 : node --version / npm --version
+## 사전 설치
+- **Node.js**: v22.16.0 - https://nodejs.org/
+- **Java**: 17+ 
+- **Python**: 3.8+
+- **Mosquitto**: 
+  - macOS: `brew install mosquitto`
+  - Windows: `choco install mosquitto`
 
-- **의존성 패키지 설치**
-- dashboard_frontend에서 npm install
-- npm install react-router-dom
-- npm install apexcharts react-apexcharts
+## 초기 설정 (한 번만)
+```bash
+# Python 가상환경 생성
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-- **개발 서버 실행**
-- npm run dev
+# 의존성 설치
+cd mosquitto_MQTT && pip install -r requirements.txt
+cd ../data_collector && pip install -r requirements.txt
+cd ../dashboard_frontend && npm install
+```
 
+## 실행 순서 (매번)
 
-- **IoT 신호 데이터**
-- mosquitto MQTT는 브로커 역할
-- mosquitto version 2.0.21
-- brew install mosquitto - 모스키토 설치
-- brew services start mosquitto - 모스키토를 서비스로 등록
+### 1. 가상환경 활성화
+```bash
+source venv/bin/activate  # Windows: venv\Scripts\activate
+```
 
-# 작업 시작할 때마다
-cd manufacturing_process/
-source venv/bin/activate - 가상환경 설치 후 실행
+### 2. Mosquitto 브로커 시작 (터미널 1)
+```bash
+# macOS
+mosquitto -c /opt/homebrew/etc/mosquitto/mosquitto.conf
 
-# MQTT 시뮬레이터 실행
-cd mosquitto_MQTT/
-pip install -r requirements.txt - 한번만 진행
-python run_simulation.py
+# Windows
+mosquitto
+```
 
-# 데이터 수집기 실행 (다른 터미널)
-cd ../data_collector/
-pip install -r requirements.txt - 한번만 진행
-python main.py
-
-# 대시보드 백엔드 (다른 터미널)
+### 3. Spring Boot 백엔드 (터미널 2)
+```bash
 cd dashboard_backend
-./gradlew bootRun
+./gradlew bootRun  # Windows: gradlew.bat bootRun
+```
 
-# 대시보드 프론트엔데 (다른 터미널)
+### 4. 데이터 수집기 (터미널 3)
+```bash
+cd data_collector
+python main.py
+```
+
+### 5. MQTT 시뮬레이터 (터미널 4)
+```bash
+cd mosquitto_MQTT
+python run_simulation.py
+```
+
+### 6. React 프론트엔드 (터미널 5)
+```bash
 cd dashboard_frontend
 npm run dev
+```
 
-# 작업 완료 후
-deactivate
+## 접속 주소
+- **대시보드**: http://localhost:5173
+- **백엔드 API**: http://localhost:8080/api/kpi/factory/summary
+
+## 종료
+- 각 터미널에서 `Ctrl+C`
+- 가상환경 비활성화: `deactivate`
+
+## 15개 공정 스테이션
+**A라인**: A01_DOOR → A02_WIRING → A03_HEADLINER → A04_CRASH_PAD  
+**B라인**: B01_FUEL_TANK → B02_CHASSIS_MERGE → B03_MUFFLER  
+**C라인**: C01_FEM → C02_GLASS → C03_SEAT → C04_BUMPER → C05_TIRE  
+**D라인**: D01_WHEEL_ALIGNMENT → D02_HEADLAMP → D03_WATER_LEAK_TEST
