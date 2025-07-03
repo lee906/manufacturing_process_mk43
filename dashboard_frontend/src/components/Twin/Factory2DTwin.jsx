@@ -15,8 +15,44 @@ const Factory2DTwin = () => {
     position: { x: 0, y: 0 }
   });
 
+  // 차량 추적 데이터 상태 관리
+  const [vehicleData, setVehicleData] = useState({
+    vehicles: [],
+    station_positions: {},
+    total_vehicles: 0,
+    active_vehicles: 0
+  });
+
   // 스케일링 정보 저장
   const scaleInfoRef = useRef({ scale: 1, offsetX: 0, offsetY: 0 });
+
+  // 실시간 차량 데이터 가져오기
+  useEffect(() => {
+    const fetchVehicleData = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/api/digital-twin/vehicles');
+        if (response.ok) {
+          const data = await response.json();
+          setVehicleData({
+            vehicles: data.vehicles || [],
+            station_positions: data.station_positions || {},
+            total_vehicles: data.total_vehicles || 0,
+            active_vehicles: data.active_vehicles || 0
+          });
+        }
+      } catch (error) {
+        console.warn('차량 데이터 가져오기 실패:', error);
+      }
+    };
+
+    // 초기 데이터 로드
+    fetchVehicleData();
+
+    // 3초마다 데이터 업데이트
+    const interval = setInterval(fetchVehicleData, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // 컨테이너 크기 변화 감지 및 반응형 처리
   useEffect(() => {
@@ -322,35 +358,170 @@ const Factory2DTwin = () => {
     ctx.fillText('C', 80, 550 + 7);          // C라인 - 컨베이어 중앙
     ctx.fillText('D', 80, 750 + 7);          // D라인 - 컨베이어 중앙
 
+    // 차량 그리기 함수
+    const drawVehicles = (ctx) => {
+      if (!vehicleData.vehicles || vehicleData.vehicles.length === 0) {
+        return;
+      }
+
+      vehicleData.vehicles.forEach((vehicle, index) => {
+        if (!vehicle.position) return;
+
+        const x = vehicle.position.x;
+        const y = vehicle.position.y;
+        const status = vehicle.status;
+        const progress = vehicle.position.station_progress || 0;
+
+        // 차량 상태별 색상
+        const statusColors = {
+          'waiting': '#FFA500',     // 주황색 - 대기
+          'in_process': '#4CAF50',  // 초록색 - 작업중
+          'moving': '#2196F3',      // 파란색 - 이동중
+          'completed': '#9E9E9E',   // 회색 - 완료
+          'failed': '#F44336'       // 빨간색 - 실패
+        };
+
+        const vehicleColor = statusColors[status] || '#666666';
+
+        // 차량 외곽선 그리기
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 2;
+        ctx.fillStyle = vehicleColor;
+        
+        // 차량 모양 (사각형)
+        const vehicleWidth = 20;
+        const vehicleHeight = 12;
+        ctx.fillRect(x - vehicleWidth/2, y - vehicleHeight/2, vehicleWidth, vehicleHeight);
+        ctx.strokeRect(x - vehicleWidth/2, y - vehicleHeight/2, vehicleWidth, vehicleHeight);
+
+        // 차량 ID 표시
+        ctx.fillStyle = '#000000';
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        const shortId = vehicle.vehicle_id.split('_')[1].slice(-4); // ID 마지막 4자리
+        ctx.fillText(shortId, x, y - vehicleHeight/2 - 3);
+
+        // 진행률 표시 (작업 중일 때)
+        if (status === 'in_process' && progress > 0) {
+          const progressBarWidth = vehicleWidth;
+          const progressBarHeight = 3;
+          const progressY = y + vehicleHeight/2 + 3;
+
+          // 진행률 바 배경
+          ctx.fillStyle = '#E0E0E0';
+          ctx.fillRect(x - progressBarWidth/2, progressY, progressBarWidth, progressBarHeight);
+
+          // 진행률 바
+          ctx.fillStyle = '#4CAF50';
+          const filledWidth = (progress / 100) * progressBarWidth;
+          ctx.fillRect(x - progressBarWidth/2, progressY, filledWidth, progressBarHeight);
+        }
+
+        // 차량 모델 표시 (작은 글씨)
+        if (vehicle.model) {
+          ctx.fillStyle = '#666666';
+          ctx.font = '8px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(vehicle.model, x, y + vehicleHeight/2 + 15);
+        }
+      });
+    };
+
+    // 실시간 차량 렌더링
+    drawVehicles(ctx);
+
     ctx.restore();
-  }, [containerSize]);
+  }, [containerSize, vehicleData]);
 
   return (
     <>
-      <div 
-        ref={containerRef}
-        style={{ 
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: '10px'
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          onClick={handleCanvasClick}
-          onMouseMove={handleMouseMove}
-          style={{
-            display: 'block',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            imageRendering: '-webkit-optimize-contrast',
-            WebkitImageRendering: '-webkit-optimize-contrast',
-            msInterpolationMode: 'nearest-neighbor'
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {/* 차량 생산 정보 패널 */}
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          padding: '15px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          minWidth: '200px',
+          zIndex: 10
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 'bold' }}>
+            🚗 생산 현황
+          </h4>
+          <div style={{ fontSize: '12px', lineHeight: '1.5' }}>
+            <div>전체 차량: <strong>{vehicleData.total_vehicles}</strong>대</div>
+            <div>생산 중: <strong>{vehicleData.active_vehicles}</strong>대</div>
+            <div>완료율: <strong>
+              {vehicleData.total_vehicles > 0 
+                ? Math.round(((vehicleData.total_vehicles - vehicleData.active_vehicles) / vehicleData.total_vehicles) * 100)
+                : 0
+              }%
+            </strong></div>
+          </div>
+          
+          {/* 상태별 범례 */}
+          <div style={{ marginTop: '10px', fontSize: '11px' }}>
+            <div style={{ margin: '2px 0' }}>
+              <span style={{ 
+                display: 'inline-block', 
+                width: '12px', 
+                height: '8px', 
+                backgroundColor: '#FFA500', 
+                marginRight: '5px' 
+              }}></span>
+              대기
+            </div>
+            <div style={{ margin: '2px 0' }}>
+              <span style={{ 
+                display: 'inline-block', 
+                width: '12px', 
+                height: '8px', 
+                backgroundColor: '#4CAF50', 
+                marginRight: '5px' 
+              }}></span>
+              작업중
+            </div>
+            <div style={{ margin: '2px 0' }}>
+              <span style={{ 
+                display: 'inline-block', 
+                width: '12px', 
+                height: '8px', 
+                backgroundColor: '#2196F3', 
+                marginRight: '5px' 
+              }}></span>
+              이동중
+            </div>
+          </div>
+        </div>
+
+        <div 
+          ref={containerRef}
+          style={{ 
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '10px'
           }}
-        />
+        >
+          <canvas
+            ref={canvasRef}
+            onClick={handleCanvasClick}
+            onMouseMove={handleMouseMove}
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              imageRendering: '-webkit-optimize-contrast',
+              WebkitImageRendering: '-webkit-optimize-contrast',
+              msInterpolationMode: 'nearest-neighbor'
+            }}
+          />
+        </div>
       </div>
       
       <ClickRobot

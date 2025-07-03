@@ -161,14 +161,27 @@ class DataProcessor:
     
     def _process_vehicle_tracking_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):
         """차량 추적 데이터 처리"""
+        # 차량 추적 데이터는 별도 API로 전송
+        vehicle_data = {
+            "total_vehicles": raw_data.get("total_vehicles", 0),
+            "active_vehicles": raw_data.get("active_vehicles", 0),
+            "vehicles": raw_data.get("vehicles", []),
+            "station_sequence": raw_data.get("station_sequence", []),
+            "station_positions": raw_data.get("station_positions", {}),
+            "timestamp": raw_data.get("timestamp", processed_data.get("timestamp"))
+        }
+        
+        # 차량 추적 전용 API로 전송
+        vehicle_success = self.api_client.send_vehicle_tracking_data(vehicle_data)
+        
+        if vehicle_success:
+            self.logger.debug("✅ 차량 추적 데이터 전송 완료")
+        else:
+            self.logger.warning("⚠️ 차량 추적 데이터 전송 실패")
+        
+        # 기존 구조도 유지 (하위 호환성)
         processed_data.update({
-            "vehicleTracking": {
-                "totalVehicles": raw_data.get("total_vehicles", 0),
-                "activeVehicles": raw_data.get("active_vehicles", 0),
-                "vehicles": raw_data.get("vehicles", []),
-                "stationSequence": raw_data.get("station_sequence", []),
-                "stationPositions": raw_data.get("station_positions", {})
-            }
+            "vehicleTracking": vehicle_data
         })
     
     def _process_robot_data(self, processed_data: Dict[str, Any], raw_data: Dict[str, Any]):

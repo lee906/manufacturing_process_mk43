@@ -26,6 +26,10 @@ class APIClient:
         """🆕 KPI 데이터 전송"""
         return self._send_data(self.endpoints['kpi_data'], kpi_data)
     
+    def send_vehicle_tracking_data(self, vehicle_data: Dict[str, Any]) -> bool:
+        """🆕 차량 추적 데이터 전송"""
+        return self._send_data(self.endpoints['vehicle_tracking'], vehicle_data)
+    
     def _send_data(self, endpoint: str, data: Dict[str, Any]) -> bool:
         """데이터 전송 (재시도 로직 포함)"""
         url = f"{self.base_url}{endpoint}"
