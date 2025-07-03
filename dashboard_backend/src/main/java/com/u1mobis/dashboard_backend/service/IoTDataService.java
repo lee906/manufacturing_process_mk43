@@ -35,8 +35,9 @@ public class IoTDataService {
     
     private void saveToInfluxDB(Map<String, Object> iotData) {
         try {
-            String stationId = (String) iotData.get("stationId");
-            String timestamp = (String) iotData.get("timestamp");
+            // 안전한 타입 변환
+            String stationId = safeStringConvert(iotData.get("stationId"));
+            String timestamp = safeStringConvert(iotData.get("timestamp"));
             
             // InfluxDB 3.x writeData 메서드에 맞는 파라미터 준비
             Map<String, String> tags = new java.util.HashMap<>();
@@ -45,10 +46,10 @@ public class IoTDataService {
             // 태그 추가
             tags.put("station_id", stationId);
             if (iotData.containsKey("processType")) {
-                tags.put("process_type", (String) iotData.get("processType"));
+                tags.put("process_type", safeStringConvert(iotData.get("processType")));
             }
             if (iotData.containsKey("location")) {
-                tags.put("location", (String) iotData.get("location"));
+                tags.put("location", safeStringConvert(iotData.get("location")));
             }
             
             // 필드 추가
@@ -103,5 +104,15 @@ public class IoTDataService {
             log.error("InfluxDB 저장 중 오류 발생", e);
             // InfluxDB 오류는 전체 프로세스를 중단시키지 않음
         }
+    }
+    
+    /**
+     * 안전한 String 타입 변환
+     */
+    private String safeStringConvert(Object value) {
+        if (value == null) {
+            return null;
+        }
+        return String.valueOf(value);
     }
 }
