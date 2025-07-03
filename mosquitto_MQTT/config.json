@@ -45,7 +45,7 @@
       "station_name": "도어 탈거",
       "process_type": "robot_assembly",
       "location": "Line A - Station 1",
-      "cycle_time_target": 180,
+      "cycle_time_target": 90,
       "robots": ["ROB_A01_001"],
       "sensors": {
         "torque_sensor": {"type": "TORQUE_FEEDBACK", "min": 0, "max": 500, "optimal": 125, "unit": "Nm"},
@@ -67,7 +67,7 @@
       "station_name": "와이어링",
       "process_type": "robot_assembly",
       "location": "Line A - Station 2", 
-      "cycle_time_target": 200,
+      "cycle_time_target": 90,
       "robots": ["ROB_A02_001", "ROB_A02_002"],
       "sensors": {
         "continuity_tester": {"type": "ELECTRICAL_TEST", "min": 0, "max": 24, "optimal": 12, "unit": "V"},
@@ -89,7 +89,7 @@
       "station_name": "헤드라이너",
       "process_type": "robot_assembly",
       "location": "Line A - Station 3",
-      "cycle_time_target": 150,
+      "cycle_time_target": 90,
       "robots": ["ROB_A03_001"],
       "sensors": {
         "vacuum_pressure": {"type": "PRESSURE_SENSOR", "min": -100, "max": 0, "optimal": -50, "unit": "kPa"},
@@ -111,7 +111,7 @@
       "station_name": "크래쉬 패드",
       "process_type": "robot_assembly", 
       "location": "Line A - Station 4",
-      "cycle_time_target": 240,
+      "cycle_time_target": 90,
       "robots": ["ROB_A04_001"],
       "sensors": {
         "airbag_pressure": {"type": "PRESSURE_TRANSDUCER", "min": 0, "max": 5, "optimal": 2.5, "unit": "bar"},
@@ -133,7 +133,7 @@
       "station_name": "연료탱크",
       "process_type": "heavy_assembly",
       "location": "Line B - Station 1",
-      "cycle_time_target": 120,
+      "cycle_time_target": 90,
       "robots": ["ROB_B01_001"],
       "sensors": {
         "leak_detector": {"type": "ULTRASONIC_LEAK", "min": 0, "max": 100, "optimal": 0, "unit": "ppm"},
@@ -155,7 +155,7 @@
       "station_name": "샤시 메리지",
       "process_type": "heavy_assembly",
       "location": "Line B - Station 2",
-      "cycle_time_target": 300,
+      "cycle_time_target": 90,
       "robots": ["ROB_B02_001", "ROB_B02_002"],
       "sensors": {
         "alignment_laser": {"type": "LASER_INTERFEROMETER", "min": 0, "max": 10, "optimal": 0.01, "unit": "mm"},
@@ -199,7 +199,7 @@
       "station_name": "FEM 모듈",
       "process_type": "precision_assembly",
       "location": "Line C - Station 1",
-      "cycle_time_target": 160,
+      "cycle_time_target": 90,
       "robots": ["ROB_C01_001"],
       "sensors": {
         "ecu_communication": {"type": "CAN_BUS_MONITOR", "min": 0, "max": 1, "optimal": 1, "unit": "boolean"},
@@ -221,7 +221,7 @@
       "station_name": "글라스",
       "process_type": "precision_assembly",
       "location": "Line C - Station 2",
-      "cycle_time_target": 140,
+      "cycle_time_target": 90,
       "robots": ["ROB_C02_001"],
       "sensors": {
         "suction_monitor": {"type": "VACUUM_SENSOR", "min": -100, "max": 0, "optimal": -80, "unit": "kPa"},
@@ -243,7 +243,7 @@
       "station_name": "시트",
       "process_type": "robot_assembly",
       "location": "Line C - Station 3",
-      "cycle_time_target": 180,
+      "cycle_time_target": 90,
       "robots": ["ROB_C03_001"],
       "sensors": {
         "weight_sensor": {"type": "LOAD_CELL", "min": 0, "max": 200, "optimal": 25, "unit": "kg"},
@@ -265,7 +265,7 @@
       "station_name": "범퍼",
       "process_type": "robot_assembly",
       "location": "Line C - Station 4",
-      "cycle_time_target": 120,
+      "cycle_time_target": 90,
       "robots": ["ROB_C04_001"],
       "sensors": {
         "impact_resistance": {"type": "FORCE_SENSOR", "min": 0, "max": 10000, "optimal": 5000, "unit": "N"},
@@ -309,7 +309,7 @@
       "station_name": "휠 얼라이언트",
       "process_type": "measurement",
       "location": "Line D - Station 1",
-      "cycle_time_target": 110,
+      "cycle_time_target": 90,
       "robots": ["ROB_D01_001"],
       "sensors": {
         "alignment_laser": {"type": "LASER_ALIGNMENT", "min": 0, "max": 20, "optimal": 0.01, "unit": "°"},
@@ -331,7 +331,7 @@
       "station_name": "헤드램프",
       "process_type": "precision_assembly",
       "location": "Line D - Station 2",
-      "cycle_time_target": 80,
+      "cycle_time_target": 90,
       "robots": ["ROB_D02_001"],
       "sensors": {
         "light_intensity": {"type": "PHOTOMETER", "min": 0, "max": 10000, "optimal": 1200, "unit": "lx"},
@@ -353,7 +353,7 @@
       "station_name": "수밀 검사",
       "process_type": "testing",
       "location": "Line D - Station 3",
-      "cycle_time_target": 200,
+      "cycle_time_target": 90,
       "robots": ["ROB_D03_001"],
       "sensors": {
         "water_pressure": {"type": "PRESSURE_GAUGE", "min": 0, "max": 10, "optimal": 3, "unit": "bar"},

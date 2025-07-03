@@ -76,33 +76,33 @@ class ProductionLineManager:
                 station_id="A01_DOOR",
                 prerequisites=[],  # 시작점
                 successors=["A02_WIRING"],
-                buffer_capacity=2,
-                min_cycle_time=45.0,
-                max_cycle_time=75.0
+                buffer_capacity=3,
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "A02_WIRING": StationDependency(
                 station_id="A02_WIRING", 
                 prerequisites=["A01_DOOR"],
                 successors=["A03_HEADLINER"],
                 buffer_capacity=3,
-                min_cycle_time=60.0,
-                max_cycle_time=90.0
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "A03_HEADLINER": StationDependency(
                 station_id="A03_HEADLINER",
                 prerequisites=["A02_WIRING"],
                 successors=["A04_CRASH_PAD"],
-                buffer_capacity=2,
-                min_cycle_time=50.0,
-                max_cycle_time=80.0
+                buffer_capacity=3,
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "A04_CRASH_PAD": StationDependency(
                 station_id="A04_CRASH_PAD",
                 prerequisites=["A03_HEADLINER"],
                 successors=["B01_FUEL_TANK"],
-                buffer_capacity=4,  # A→B 라인 전환점이므로 버퍼 큼
-                min_cycle_time=70.0,
-                max_cycle_time=110.0
+                buffer_capacity=3,
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             
             # B라인 - 중량 작업
@@ -110,7 +110,7 @@ class ProductionLineManager:
                 station_id="B01_FUEL_TANK",
                 prerequisites=["A04_CRASH_PAD"],
                 successors=["B02_CHASSIS_MERGE"],
-                buffer_capacity=2,
+                buffer_capacity=3,
                 min_cycle_time=90.0,
                 max_cycle_time=150.0
             ),
@@ -119,8 +119,8 @@ class ProductionLineManager:
                 prerequisites=["B01_FUEL_TANK"],
                 successors=["B03_MUFFLER"],
                 buffer_capacity=1,  # 중요 공정이므로 버퍼 작음
-                min_cycle_time=120.0,
-                max_cycle_time=180.0
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "B03_MUFFLER": StationDependency(
                 station_id="B03_MUFFLER",
@@ -136,7 +136,7 @@ class ProductionLineManager:
                 station_id="C01_FEM",
                 prerequisites=["B03_MUFFLER"],
                 successors=["C02_GLASS"],
-                buffer_capacity=2,
+                buffer_capacity=3,
                 min_cycle_time=100.0,
                 max_cycle_time=160.0
             ),
@@ -144,7 +144,7 @@ class ProductionLineManager:
                 station_id="C02_GLASS",
                 prerequisites=["C01_FEM"],
                 successors=["C03_SEAT"],
-                buffer_capacity=2,
+                buffer_capacity=3,
                 min_cycle_time=90.0,
                 max_cycle_time=140.0
             ),
@@ -160,7 +160,7 @@ class ProductionLineManager:
                 station_id="C04_BUMPER",
                 prerequisites=["C03_SEAT"],
                 successors=["C05_TIRE"],
-                buffer_capacity=2,
+                buffer_capacity=3,
                 min_cycle_time=75.0,
                 max_cycle_time=115.0
             ),
@@ -178,25 +178,25 @@ class ProductionLineManager:
                 station_id="D01_WHEEL_ALIGNMENT",
                 prerequisites=["C05_TIRE"],
                 successors=["D02_HEADLAMP"],
-                buffer_capacity=2,
-                min_cycle_time=120.0,
-                max_cycle_time=180.0
+                buffer_capacity=3,
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "D02_HEADLAMP": StationDependency(
                 station_id="D02_HEADLAMP",
                 prerequisites=["D01_WHEEL_ALIGNMENT"],
                 successors=["D03_WATER_LEAK_TEST"],
-                buffer_capacity=2,
-                min_cycle_time=60.0,
-                max_cycle_time=90.0
+                buffer_capacity=3,
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             ),
             "D03_WATER_LEAK_TEST": StationDependency(
                 station_id="D03_WATER_LEAK_TEST",
                 prerequisites=["D02_HEADLAMP"],
                 successors=[],  # 마지막 공정
                 buffer_capacity=1,
-                min_cycle_time=180.0,
-                max_cycle_time=300.0
+                min_cycle_time=85.0,
+                max_cycle_time=95.0
             )
         }
         return dependencies

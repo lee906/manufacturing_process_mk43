@@ -36,12 +36,12 @@ class A01DoorRemovalSimulator(BaseStationSimulator):
         print(f"🚪 A01 도어 탈거 공정 시뮬레이터 초기화 완료")
     
     def _update_operation_phase(self):
-        """작업 단계 업데이트"""
+        """작업 단계 업데이트 (현실적 변동성 적용)"""
         current_time = time.time()
         phase_duration = current_time - self.phase_start_time
         
-        # 각 단계별 소요 시간 (초)
-        phase_durations = {
+        # 각 단계별 기본 소요 시간 (초)
+        base_phase_durations = {
             "idle": 5,
             "approach": 8,
             "unlock": 12,
@@ -51,7 +51,13 @@ class A01DoorRemovalSimulator(BaseStationSimulator):
             "inspect": 8
         }
         
-        current_duration = phase_durations.get(self.current_phase, 10)
+        base_duration = base_phase_durations.get(self.current_phase, 10)
+        
+        # 현실적 변동성 적용
+        from ..utils.realistic_variations import variation_manager
+        current_duration = variation_manager.calculate_variable_cycle_time(
+            self.station_id + f"_{self.current_phase}", base_duration
+        )
         
         if phase_duration >= current_duration:
             # 다음 단계로 진행
@@ -234,6 +240,11 @@ class A01DoorRemovalSimulator(BaseStationSimulator):
                 "cycle_time": round(time.time() - self.operation_start_time, 1),
                 "target_time": self.current_cycle_time,
                 "efficiency": round((self.current_cycle_time / max(1, time.time() - self.operation_start_time)) * 100, 1)
+            },
+            "realistic_variations": {
+                "station_status": self.get_station_variation_status(),
+                "warmup_status": self.get_warmup_status(),
+                "shift_status": self.get_shift_status()
             }
         }
     
