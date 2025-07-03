@@ -105,7 +105,7 @@ class RobotManager:
         status_data = []
         
         for robot in robots:
-            status_data.append(robot.get_status_data())
+            status_data.append(robot.get_telemetry_data())
             
         return status_data
     
@@ -187,7 +187,7 @@ class RobotManager:
                 
                 # 상태별 집계
                 telemetry = robot.get_telemetry_data()
-                status = telemetry.get("status", "unknown")
+                status = getattr(telemetry, "status", "unknown")
                 
                 if status in ["running", "working", "moving"]:
                     active_robots += 1

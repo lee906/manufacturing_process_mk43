@@ -1,6 +1,6 @@
 """
-차량 위치 추적 시스템
-디지털 트윈을 위한 실시간 차량 위치 및 이동 추적
+차량 위치 추적 시스템 (현대차 의장공정 방식)
+센서 기반 실시간 차량 위치 및 컨베이어 제어
 """
 
 import time
@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
+from .sensor_system import ProductionLineController, SensorReading
 
 class VehicleStatus(Enum):
     """차량 상태"""
@@ -82,39 +83,45 @@ class VehicleTracker:
             "D03_WATER_LEAK_TEST" # 수밀 검사
         ]
         
-        # Canvas 2D 좌표 시스템 (각 스테이션별 위치)
+        # Factory2DTwin.jsx 좌표계와 일치시킨 스테이션 위치
         self.station_positions = {
-            # A라인 (상단, 좌측에서 우측으로)
-            "A01_DOOR": (100, 100),
-            "A02_WIRING": (250, 100),
-            "A03_HEADLINER": (400, 100),
-            "A04_CRASH_PAD": (550, 100),
+            # A라인 (y=150, 좌측에서 우측으로)
+            "A01_DOOR": (150, 150),          # 도어탈거 x=150
+            "A02_WIRING": (300, 150),        # 와이어링 x=300
+            "A03_HEADLINER": (450, 150),     # 헤드라이너 x=450
+            "A04_CRASH_PAD": (750, 150),     # 크래쉬패드 x=750 (width=350 중앙)
             
-            # B라인 (중상단, 우측에서 좌측으로)
-            "B01_FUEL_TANK": (700, 200),
-            "B02_CHASSIS_MERGE": (550, 200),
-            "B03_MUFFLER": (400, 200),
+            # B라인 (y=350, 우측에서 좌측으로)
+            "B01_FUEL_TANK": (850, 350),     # 연료탱크 x=850
+            "B02_CHASSIS_MERGE": (500, 350), # 샤시메리지 x=500 (width=500 중앙)
+            "B03_MUFFLER": (150, 350),       # 머플러 x=150
             
-            # C라인 (중하단, 좌측에서 우측으로)
-            "C01_FEM": (100, 300),
-            "C02_GLASS": (250, 300),
-            "C03_SEAT": (400, 300),
-            "C04_BUMPER": (550, 300),
-            "C05_TIRE": (700, 300),
+            # C라인 (y=550, 좌측에서 우측으로)
+            "C01_FEM": (150, 550),           # FEM x=150
+            "C02_GLASS": (300, 550),         # 글라스 x=300
+            "C03_SEAT": (450, 550),          # 시트 x=450
+            "C04_BUMPER": (600, 550),        # 범퍼 x=600
+            "C05_TIRE": (750, 550),          # 타이어 x=750
             
-            # D라인 (하단, 우측에서 좌측으로)
-            "D01_WHEEL_ALIGNMENT": (700, 400),
-            "D02_HEADLAMP": (400, 400),
-            "D03_WATER_LEAK_TEST": (100, 400)
+            # D라인 (y=750, 우측에서 좌측으로)
+            "D01_WHEEL_ALIGNMENT": (800, 750), # 휠 얼라이언트 x=800
+            "D02_HEADLAMP": (650, 750),        # 헤드램프 x=650
+            "D03_WATER_LEAK_TEST": (320, 750) # 수밀검사 x=320 (width=450 중앙)
         }
         
         # 활성 차량 목록
         self.active_vehicles: Dict[str, Vehicle] = {}
         
         # 차량 생성 설정
-        self.vehicle_creation_interval = 60  # 60초마다 새 차량 생성
+        self.vehicle_creation_interval = 90  # 90초마다 새 차량 생성 (사이클타임과 동일)
         self.last_vehicle_creation = 0
-        self.max_concurrent_vehicles = 10    # 최대 동시 생산 차량 수
+        self.max_concurrent_vehicles = 8     # 최대 동시 생산 차량 수 (버퍼 고려)
+        
+        # 센서 기반 생산라인 제어 시스템
+        self.production_controller = ProductionLineController(self.station_sequence)
+        
+        # 컨베이어 이동 시간 (실제 현대차 기준: 5초)
+        self.conveyor_travel_time = 5.0
         
     def create_new_vehicle(self) -> Vehicle:
         """새 차량 생성"""
@@ -181,33 +188,59 @@ class VehicleTracker:
                 pass
     
     def simulate_vehicle_movement(self, vehicle: Vehicle) -> Dict:
-        """차량 이동 시뮬레이션"""
-        # 작업 진행률 업데이트 (1-5% 증가)
-        progress_increment = random.uniform(1.0, 5.0)
+        """센서 기반 차량 이동 시뮬레이션 (현대차 의장공정 방식)"""
+        current_time = time.time()
         
-        # 차량 모델별 작업 속도 차이
-        speed_multiplier = {
-            "아반떼": 1.0,
-            "투싼": 0.85,
-            "팰리세이드": 0.65,  # 대형차는 작업이 더 오래 걸림
-            "코나": 0.9,
-            "그랜저": 0.75
-        }.get(vehicle.model, 1.0)
-        
-        progress_increment *= speed_multiplier
-        
-        # 불량 발생 시뮬레이션 (2% 확률)
-        if random.random() < 0.02:
-            vehicle.status = VehicleStatus.FAILED
-            return vehicle.to_dict()
-        
-        # 진행률 업데이트
-        if vehicle.status != VehicleStatus.FAILED:
-            if vehicle.position.station_progress < 100.0:
-                vehicle.status = VehicleStatus.IN_PROCESS
-                self.update_vehicle_progress(vehicle, progress_increment)
-            else:
+        # 차량이 스테이션에 새로 도착한 경우
+        if vehicle.position.station_progress == 0.0:
+            # 센서 기반 차량 처리 시작
+            processing_result = self.production_controller.process_vehicle_at_station(
+                vehicle.vehicle_id, 
+                vehicle.position.station_id
+            )
+            
+            vehicle.sensor_data = processing_result
+            vehicle.work_start_time = current_time
+            vehicle.status = VehicleStatus.IN_PROCESS
+            
+        # 90초 사이클 타임 기준으로 진행률 계산
+        elif vehicle.status == VehicleStatus.IN_PROCESS:
+            elapsed_time = current_time - getattr(vehicle, 'work_start_time', current_time)
+            cycle_time = 90.0  # 통일된 90초 사이클
+            
+            # 차량 모델별 작업 속도 조정
+            speed_multiplier = {
+                "아반떼": 1.0,
+                "투싼": 0.95,
+                "팰리세이드": 0.85,  # 대형차는 작업이 조금 더 오래 걸림
+                "코나": 0.98,
+                "그랜저": 0.90
+            }.get(vehicle.model, 1.0)
+            
+            adjusted_cycle_time = cycle_time / speed_multiplier
+            progress_percentage = (elapsed_time / adjusted_cycle_time) * 100.0
+            
+            vehicle.position.station_progress = min(100.0, progress_percentage)
+            
+            # 작업 완료 시
+            if vehicle.position.station_progress >= 100.0:
                 vehicle.status = VehicleStatus.MOVING
+                vehicle.conveyor_start_time = current_time
+        
+        # 컨베이어 이동 중 (5초)
+        elif vehicle.status == VehicleStatus.MOVING:
+            elapsed_move_time = current_time - getattr(vehicle, 'conveyor_start_time', current_time)
+            
+            if elapsed_move_time >= self.conveyor_travel_time:
+                # 다음 스테이션으로 이동
+                completed = self.move_vehicle_to_next_station(vehicle)
+                if not completed:
+                    vehicle.status = VehicleStatus.WAITING
+                    vehicle.position.station_progress = 0.0
+        
+        # 불량 발생 시뮬레이션 (1% 확률)
+        if random.random() < 0.01:
+            vehicle.status = VehicleStatus.FAILED
         
         return vehicle.to_dict()
     
