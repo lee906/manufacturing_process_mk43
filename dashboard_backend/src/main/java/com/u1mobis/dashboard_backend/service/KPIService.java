@@ -224,9 +224,14 @@ public class KPIService {
     
     private double extractOEEValue(Map<String, Object> rawData) {
         if (rawData.containsKey("oee")) {
-            Map<String, Object> oeeData = (Map<String, Object>) rawData.get("oee");
-            if (oeeData.containsKey("value")) {
-                return ((Number) oeeData.get("value")).doubleValue();
+            Object oeeData = rawData.get("oee");
+            if (oeeData instanceof Number) {
+                return ((Number) oeeData).doubleValue();
+            } else if (oeeData instanceof Map) {
+                Map<String, Object> oeeMap = (Map<String, Object>) oeeData;
+                if (oeeMap.containsKey("value")) {
+                    return ((Number) oeeMap.get("value")).doubleValue();
+                }
             }
         }
         return 0.0;
