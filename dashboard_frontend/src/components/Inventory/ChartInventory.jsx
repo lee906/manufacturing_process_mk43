@@ -1,18 +1,27 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ApexCharts from 'apexcharts';
+import axios from 'axios';
 
 const ChartInventory = () => {
   const chartRef = useRef(null);
-
-  // 12개의 랜덤 숫자 생성
-  const getRandomData = (min, max) => {
-    return Array.from({ length: 12 }, () =>
-      Math.floor(Math.random() * (max - min + 1)) + min
-    );
-  };
+  const [series, setSeries] = useState([]);
 
   useEffect(() => {
-    if (!chartRef.current) return;
+    axios.get('http://localhost:8080/api/stocks/chart')
+      .then(response => {
+        const chartData = response.data.map(item => ({
+          name: item.carModel,
+          data: item.monthlyStock
+        }));
+        setSeries(chartData);
+      })
+      .catch(error => {
+        console.error("차트 데이터 불러오기 실패:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (!chartRef.current || series.length === 0) return;
 
     const chart = new ApexCharts(chartRef.current, {
       chart: {
@@ -28,28 +37,7 @@ const ChartInventory = () => {
         lineCap: "round",
         curve: "straight"
       },
-      series: [
-        {
-          name: "아반떼",
-          data: getRandomData(0, 100000)
-        },
-        {
-          name: "소나타",
-          data: getRandomData(0, 100000)
-        },
-        {
-          name: "그랜저",
-          data: getRandomData(0, 100000)
-        },
-        {
-          name: "아이오닉",
-          data: getRandomData(0, 100000)
-        },
-        {
-          name: "스포티지",
-          data: getRandomData(0, 100000)
-        }
-      ],
+      series: series,
       tooltip: {
         theme: 'dark'
       },
@@ -82,11 +70,11 @@ const ChartInventory = () => {
         }
       },
       colors: [
-        '#facc15', // 아반떼 (노랑)
-        '#10b981', // 소나타 (초록)
-        '#3b82f6', // 그랜저 (파랑)
-        '#000000', // 아이오닉 (청록)
-        '#ef4444', // 스포티지 (빨강)
+        '#facc15', // 아반떼
+        '#10b981', // 소나타
+        '#3b82f6', // 그랜저
+        '#000000', // 아이오닉
+        '#ef4444', // 스포티지
       ],
       legend: {
         show: true,
@@ -107,7 +95,7 @@ const ChartInventory = () => {
     chart.render();
 
     return () => chart.destroy();
-  }, []);
+  }, [series]);
 
   return (
     <div className="card">

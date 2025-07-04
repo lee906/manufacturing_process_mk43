@@ -43,7 +43,7 @@ postgresql
 powershell "try { $tcp = New-Object System.Net.Sockets.TcpClient; $tcp.Connect('리모트주소', 리모트포트); Write-Host 'PostgreSQL 포트 연결 성공!'; $tcp.Close() } catch { Write-Host 'PostgreSQL 포트 연결 실패: ' $_.Exception.Message }"
 
 
-powershell "$conn = New-Object Npgsql.NpgsqlConnection('Host=proxy71.rt3.io:36643;Database=manufacturing_dashboard;Username=postgres;Password=1234'); try { $conn.Open(); Write-Host 'PostgreSQL 연결 성공!' } catch { Write-Host '연결 실패: ' $_.Exception.Message } finally { $conn.Close() }"
+powershell "$conn = New-Object Npgsql.NpgsqlConnection('Host=proxy151.r3proxy.com,34170;Database=manufacturing_dashboard;Username=postgres;Password=1234'); try { $conn.Open(); Write-Host 'PostgreSQL 연결 성공!' } catch { Write-Host '연결 실패: ' $_.Exception.Message } finally { $conn.Close() }"
 ```
 ---
 

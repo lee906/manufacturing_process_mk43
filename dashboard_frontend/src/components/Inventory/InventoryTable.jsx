@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const getStatus = (quantity, safetyStock) => {
   if (quantity === 0) return { label: '품절', color: 'status-red' };
@@ -11,48 +12,9 @@ const InventoryTable = () => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
-    setItems([
-      {
-        id: 1,
-        itemCode: 'A1001',
-        itemName: '엔진 블록',
-        quantity: 10,
-        safetyStock: 20,
-        location: '창고1',
-        supplier: '현대제철',
-        receivedDate: '2025-06-10'
-      },
-      {
-        id: 2,
-        itemCode: 'B2002',
-        itemName: '변속기',
-        quantity: 30,
-        safetyStock: 10,
-        location: '창고2',
-        supplier: '만도',
-        receivedDate: '2025-06-15'
-      },
-      {
-        id: 3,
-        itemCode: 'C3003',
-        itemName: '도어 패널',
-        quantity: 120,
-        safetyStock: 50,
-        location: '창고3',
-        supplier: '한온시스템',
-        receivedDate: '2025-06-12'
-      },
-      {
-        id: 4,
-        itemCode: 'D4004',
-        itemName: '시트 프레임',
-        quantity: 0,
-        safetyStock: 15,
-        location: '창고4',
-        supplier: '세종공업',
-        receivedDate: '2025-06-18'
-      }
-    ]);
+    axios.get('http://localhost:8080/api/stocks') // 포트 맞게 수정
+      .then(response => setItems(response.data))
+      .catch(error => console.error('재고 불러오기 실패:', error));
   }, []);
 
   return (
@@ -60,33 +22,31 @@ const InventoryTable = () => {
       <table className="table">
         <thead>
           <tr>
-            <th><span class="flag flag-xs flag-country-us"></span></th>
-            <th className="text-nowrap">품목 코드</th>
-            <th className="text-nowrap">품 목 명</th>
-            <th className="text-nowrap">현재 재고 수량</th>
-            <th className="text-nowrap">평균 재고 수량</th>
-            <th className="text-nowrap">창고 위치</th>
-            <th className="text-nowrap">협력 업체</th>
-            <th className="text-nowrap">입고 일자</th>
-            <th className="text-nowrap">실시간 재고 상태</th>
+            <th>#</th>
+            <th>품목 코드</th>
+            <th>품 목 명</th>
+            <th>현재 재고 수량</th>
+            <th>평균 재고 수량</th>
+            <th>창고 위치</th>
+            <th>협력 업체</th>
+            <th>입고 일자</th>
+            <th>재고 상태</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item, idx) => {
-            const status = getStatus(item.quantity, item.safetyStock);
+            const status = getStatus(item.currentStock, item.safetyStock);
             return (
-              <tr key={item.id}>
+              <tr key={item.stockId}>
                 <th>{idx + 1}</th>
-                <td>{item.itemCode}</td>
-                <td>{item.itemName}</td>
-                <td>{item.quantity}</td>
+                <td>{item.stockCode}</td>
+                <td>{item.stockName}</td>
+                <td>{item.currentStock}</td>
                 <td>{item.safetyStock}</td>
-                <td>{item.location}</td>
-                <td>{item.supplier}</td>
-                <td>{item.receivedDate}</td>
-                <td>
-                  <span className={`status ${status.color}`}>{status.label}</span>
-                </td>
+                <td>{item.stockLocation}</td>
+                <td>{item.partnerCompany}</td>
+                <td>{item.inboundDate}</td>
+                <td><span className={`status ${status.color}`}>{status.label}</span></td>
               </tr>
             );
           })}

@@ -1,26 +1,44 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ApexCharts from 'apexcharts';
+import axios from 'axios';
 
 const SummaryCard = () => {
   const chartRef = useRef(null);
+  const [chartData, setChartData] = useState({
+    labels: [],
+    series: []
+  });
 
   useEffect(() => {
-    const randomData = Array.from({ length: 5 }, () => Math.floor(Math.random() * 100) + 1);
+    axios.get('http://localhost:8080/api/stocks')
+      .then((response) => {
+        const data = response.data;
 
-    const options = {
+        // 차트에 사용할 항목 필터링: 차량 종류 기준 (아반떼, 소나타, 그랜저, 아이오닉, 스포티지)
+        const carTypes = ['아반떼', '소나타', '그랜저', '아이오닉', '스포티지'];
+        const filtered = data.filter(item => carTypes.includes(item.stockName));
+
+        const labels = filtered.map(item => item.stockName);
+        const series = filtered.map(item => item.currentStock);
+
+        setChartData({ labels, series });
+      })
+      .catch((error) => console.error('Summary 데이터 불러오기 실패:', error));
+  }, []);
+
+  useEffect(() => {
+    if (!chartRef.current || chartData.series.length === 0) return;
+
+    const chart = new ApexCharts(chartRef.current, {
       chart: {
         type: 'donut',
         fontFamily: 'inherit',
         height: 260,
-        sparkline: {
-          enabled: true
-        },
-        animations: {
-          enabled: false
-        },
+        sparkline: { enabled: true },
+        animations: { enabled: false }
       },
-      series: randomData,
-      labels: ["아반떼", "소나타", "그랜저", "아이오닉", "스포티지"],
+      series: chartData.series,
+      labels: chartData.labels,
       tooltip: {
         theme: 'dark',
         fillSeriesColor: false
@@ -32,8 +50,8 @@ const SummaryCard = () => {
         '#facc15', // 아반떼 (노랑)
         '#10b981', // 소나타 (초록)
         '#3b82f6', // 그랜저 (파랑)
-        '#000000', // 아이오닉 (청록)
-        '#ef4444', // 스포티지 (빨강)
+        '#000000', // 아이오닉 (검정)
+        '#ef4444'  // 스포티지 (빨강)
       ],
       legend: {
         show: true,
@@ -53,22 +71,19 @@ const SummaryCard = () => {
         pie: {
           donut: {
             labels: {
-              show: false // 가운데 텍스트는 숨김
+              show: false
             }
           }
         }
       }
-    };
+    });
 
-    const chart = new ApexCharts(chartRef.current, options);
     chart.render();
-
     return () => chart.destroy();
-  }, []);
+  }, [chartData]);
 
   return (
     <div style={{ position: 'relative', paddingTop: '2rem' }}>
-      {/* 왼쪽 상단 텍스트 */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -80,7 +95,6 @@ const SummaryCard = () => {
         발주
       </div>
 
-      {/* 도넛 차트 */}
       <div id="chart-demo-pie" ref={chartRef} />
     </div>
   );

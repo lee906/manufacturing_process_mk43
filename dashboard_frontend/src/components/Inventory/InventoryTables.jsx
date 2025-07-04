@@ -1,30 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const InventoryTable = () => {
-  const inventory = [
-    {
-      id: 'MAT_001',
-      name: '시트 어셈블리',
-      location: '창고A-01',
-      currentStock: 45,
-      safetyStock: 30,
-      consumptionRate: '8개/시간',
-      estimatedRunOut: '5.6시간',
-      status: '정상',
-      lastSupply: '14:30 예정'
-    },
-    {
-      id: 'MAT_002',
-      name: '백 프레임',
-      location: '창고A-02',
-      currentStock: 28,
-      safetyStock: 35,
-      consumptionRate: '10개/시간',
-      estimatedRunOut: '2.8시간',
-      status: '부족',
-      lastSupply: '15:00 예정'
-    }
-  ];
+const InventoryTables = () => {
+  const [inventory, setInventory] = useState([]);
+
+  useEffect(() => {
+    axios.get('http://localhost:8080/api/stocks')
+      .then(response => setInventory(response.data))
+      .catch(error => console.error("재고 데이터 불러오기 실패:", error));
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -36,10 +20,13 @@ const InventoryTable = () => {
     }
   };
 
-  const getSupplyColor = (supply) => {
-    if (supply.includes('완료')) return 'status-green';
-    if (supply.includes('지연')) return 'status-red';
-    return 'status-blue';
+  const getSupplyColor = (date) => {
+    // 날짜가 오늘 이후면 "예정", 오늘이면 "완료", 과거면 "지연"
+    const today = new Date();
+    const inbound = new Date(date);
+    if (inbound > today) return 'status-blue';
+    if (inbound.toDateString() === today.toDateString()) return 'status-green';
+    return 'status-red';
   };
 
   return (
@@ -59,27 +46,31 @@ const InventoryTable = () => {
           </tr>
         </thead>
         <tbody>
-          {inventory.map((item) => (
-            <tr key={item.id}>
-              <th>{item.id}</th>
-              <td>{item.name}</td>
-              <td>{item.location}</td>
-              <td>{item.currentStock}개</td>
-              <td>{item.safetyStock}개</td>
-              <td>{item.consumptionRate}</td>
-              <td>{item.estimatedRunOut}</td>
-              <td>
-                <span className={`status ${getStatusColor(item.status)}`}>
-                  {item.status}
-                </span>
-              </td>
-              <td>
-                <span className={`status ${getSupplyColor(item.lastSupply)}`}>
-                  {item.lastSupply}
-                </span>
-              </td>
-            </tr>
-          ))}
+          {inventory.map((item) => {
+            const consumptionRate = '8개/시간'; // 추후 DB에서 가져오게 수정 가능
+            const estimatedRunOut = `${(item.currentStock / 8).toFixed(1)}시간`; // 가정
+            return (
+              <tr key={item.stockCode}>
+                <th>{item.stockCode}</th>
+                <td>{item.stockName}</td>
+                <td>{item.stockLocation}</td>
+                <td>{item.currentStock}개</td>
+                <td>{item.safetyStock}개</td>
+                <td>{consumptionRate}</td>
+                <td>{estimatedRunOut}</td>
+                <td>
+                  <span className={`status ${getStatusColor(item.stockState)}`}>
+                    {item.stockState}
+                  </span>
+                </td>
+                <td>
+                  <span className={`status ${getSupplyColor(item.inboundDate)}`}>
+                    {new Date(item.inboundDate).toLocaleDateString()} 예정
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
@@ -88,8 +79,8 @@ const InventoryTable = () => {
         <small className="text-muted">
           <strong>상태 기준:</strong> 
           <span className="status status-green ms-1">정상</span> 안전재고 이상 | 
-          <span className="status status-yellow ms-1">주의</span> 안전재고 근접 | 
-          <span className="status status-orange ms-1">부족</span> 안전재고 미만 | 
+          <span className="status status-yellow ms-1">주의</span> 근접 | 
+          <span className="status status-orange ms-1">부족</span> 미만 | 
           <span className="status status-red ms-1">긴급</span> 2시간 내 소진
         </small>
       </div>
@@ -97,4 +88,4 @@ const InventoryTable = () => {
   );
 };
 
-export default InventoryTable;
+export default InventoryTables;
