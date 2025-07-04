@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, asdict
 from enum import Enum
 from .sensor_system import ProductionLineController, SensorReading
+from .conveyor_path import ConveyorPathCalculator
 
 class VehicleStatus(Enum):
     """차량 상태"""
@@ -27,6 +28,7 @@ class VehiclePosition:
     y: float                    # Y 좌표 (0-600)
     station_id: str             # 현재 스테이션 ID
     station_progress: float     # 스테이션 내 진행률 (0-100%)
+    movement_progress: float = 0.0  # 컨베이어 이동 진행률 (0-100%)
     
 @dataclass 
 class Vehicle:
@@ -40,6 +42,7 @@ class Vehicle:
     created_time: datetime     # 생성 시간
     current_station_index: int # 현재 스테이션 인덱스
     total_stations: int        # 전체 스테이션 수
+    movement_path: Optional[List[Tuple[float, float]]] = None  # 현재 이동 경로
     
     def to_dict(self) -> Dict:
         """딕셔너리로 변환"""
@@ -63,6 +66,9 @@ class VehicleTracker:
         # 현대차 모델 및 색상
         self.vehicle_models = ["아반떼", "투싼", "팰리세이드", "코나", "그랜저"]
         self.vehicle_colors = ["화이트", "블랙", "실버", "레드", "블루", "그레이"]
+        
+        # 컨베이어 경로 계산기 초기화
+        self.path_calculator = ConveyorPathCalculator()
         
         # 공정 스테이션 순서 (실제 의장공정 순서)
         self.station_sequence = [
@@ -138,7 +144,8 @@ class VehicleTracker:
             x=float(x),
             y=float(y),
             station_id=first_station,
-            station_progress=0.0
+            station_progress=0.0,
+            movement_progress=0.0
         )
         
         vehicle = Vehicle(
@@ -155,25 +162,68 @@ class VehicleTracker:
         
         return vehicle
     
-    def move_vehicle_to_next_station(self, vehicle: Vehicle) -> bool:
-        """차량을 다음 스테이션으로 이동"""
+    def start_movement_to_next_station(self, vehicle: Vehicle):
+        """다음 스테이션으로의 이동 시작"""
         if vehicle.current_station_index >= len(self.station_sequence) - 1:
             # 마지막 스테이션 완료
             vehicle.status = VehicleStatus.COMPLETED
-            return True
+            return
         
-        # 다음 스테이션으로 이동
+        # 다음 스테이션 결정
+        current_station = self.station_sequence[vehicle.current_station_index]
+        next_station = self.station_sequence[vehicle.current_station_index + 1]
+        
+        # 이동 경로 계산
+        movement_path = self.path_calculator.calculate_movement_path(current_station, next_station)
+        vehicle.movement_path = movement_path
+        vehicle.position.movement_progress = 0.0
+        vehicle.status = VehicleStatus.MOVING
+    
+    def update_vehicle_movement(self, vehicle: Vehicle, delta_time: float):
+        """차량의 컨베이어 이동 업데이트"""
+        if vehicle.status != VehicleStatus.MOVING or not vehicle.movement_path:
+            return
+        
+        # 이동 속도 (픽셀/초) - 컨베이어 속도 현실적으로 조정
+        movement_speed = 50.0  # 50픽셀/초 (약 5초에 250픽셀 이동)
+        
+        # 경로 총 길이 계산
+        total_distance = 0
+        for i in range(len(vehicle.movement_path) - 1):
+            x1, y1 = vehicle.movement_path[i]
+            x2, y2 = vehicle.movement_path[i + 1]
+            total_distance += ((x2 - x1)**2 + (y2 - y1)**2)**0.5
+        
+        # 진행률 업데이트
+        if total_distance > 0:
+            progress_delta = (movement_speed * delta_time) / total_distance
+            vehicle.position.movement_progress = min(1.0, vehicle.position.movement_progress + progress_delta)
+            
+            # 새로운 위치 계산
+            new_x, new_y = self.path_calculator.interpolate_position(
+                vehicle.movement_path, vehicle.position.movement_progress
+            )
+            vehicle.position.x = new_x
+            vehicle.position.y = new_y
+            
+            # 이동 완료 체크
+            if vehicle.position.movement_progress >= 1.0:
+                self.complete_movement_to_next_station(vehicle)
+    
+    def complete_movement_to_next_station(self, vehicle: Vehicle):
+        """다음 스테이션 도착 완료 처리"""
         vehicle.current_station_index += 1
         next_station = self.station_sequence[vehicle.current_station_index]
-        x, y = self.station_positions[next_station]
         
+        # 최종 위치 설정
+        x, y = self.station_positions[next_station]
         vehicle.position.x = float(x)
         vehicle.position.y = float(y)
         vehicle.position.station_id = next_station
         vehicle.position.station_progress = 0.0
+        vehicle.position.movement_progress = 0.0
+        vehicle.movement_path = None
         vehicle.status = VehicleStatus.WAITING
-        
-        return False
     
     def update_vehicle_progress(self, vehicle: Vehicle, progress_delta: float):
         """차량의 스테이션 내 진행률 업데이트"""
@@ -181,18 +231,17 @@ class VehicleTracker:
             vehicle.position.station_progress + progress_delta)
         
         if vehicle.position.station_progress >= 100.0:
-            # 현재 스테이션 작업 완료
-            completed = self.move_vehicle_to_next_station(vehicle)
-            if completed:
-                # 전체 공정 완료
-                pass
+            # 현재 스테이션 작업 완료 - 다음 스테이션으로 이동 시작
+            self.start_movement_to_next_station(vehicle)
     
     def simulate_vehicle_movement(self, vehicle: Vehicle) -> Dict:
-        """센서 기반 차량 이동 시뮬레이션 (현대차 의장공정 방식)"""
+        """센서 기반 차량 이동 시뮬레이션 (현대차 의장공정 방식) - 부드러운 이동"""
         current_time = time.time()
+        delta_time = current_time - getattr(vehicle, 'last_update_time', current_time)
+        vehicle.last_update_time = current_time
         
         # 차량이 스테이션에 새로 도착한 경우
-        if vehicle.position.station_progress == 0.0:
+        if vehicle.status == VehicleStatus.WAITING and vehicle.position.station_progress == 0.0:
             # 센서 기반 차량 처리 시작
             processing_result = self.production_controller.process_vehicle_at_station(
                 vehicle.vehicle_id, 
@@ -222,21 +271,13 @@ class VehicleTracker:
             
             vehicle.position.station_progress = min(100.0, progress_percentage)
             
-            # 작업 완료 시
+            # 작업 완료 시 - 자동으로 다음 스테이션으로 이동 시작
             if vehicle.position.station_progress >= 100.0:
-                vehicle.status = VehicleStatus.MOVING
-                vehicle.conveyor_start_time = current_time
+                self.start_movement_to_next_station(vehicle)
         
-        # 컨베이어 이동 중 (5초)
+        # 컨베이어 이동 중 - 부드러운 이동 업데이트
         elif vehicle.status == VehicleStatus.MOVING:
-            elapsed_move_time = current_time - getattr(vehicle, 'conveyor_start_time', current_time)
-            
-            if elapsed_move_time >= self.conveyor_travel_time:
-                # 다음 스테이션으로 이동
-                completed = self.move_vehicle_to_next_station(vehicle)
-                if not completed:
-                    vehicle.status = VehicleStatus.WAITING
-                    vehicle.position.station_progress = 0.0
+            self.update_vehicle_movement(vehicle, delta_time)
         
         # 불량 발생 시뮬레이션 (1% 확률)
         if random.random() < 0.01:
