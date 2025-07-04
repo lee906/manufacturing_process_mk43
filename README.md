@@ -10,7 +10,9 @@ manufacturing_process/
 ├── dashboard_frontend/    # React 대시보드 (포트: 5173)
 ├── data_collector/        # Python 데이터 수집 서버 (포트: 8082)
 ├── mosquitto_MQTT/        # MQTT 시뮬레이터 (15개 스테이션)
-└── venv/                  # Python 가상환경
+├── venv/                  # Python 가상환경
+├── start_macos.sh         # 🍎 macOS 자동 실행 스크립트
+└── start_windows.bat      # 🪟 Windows 자동 실행 스크립트
 ```
 
 ## 기술 스택
@@ -40,7 +42,37 @@ cd ../data_collector && pip install -r requirements.txt
 cd ../dashboard_frontend && npm install
 ```
 
-## 실행 순서 (매번)
+## 🚀 간편 실행 (자동화 스크립트)
+
+### macOS 사용자
+```bash
+# 1. 가상환경 활성화
+source venv/bin/activate
+
+# 2. 스크립트 실행
+./start_macos.sh
+```
+
+### Windows 사용자
+```cmd
+# 1. 가상환경 활성화
+venv\Scripts\activate.bat
+
+# 2. 스크립트 실행
+start_windows.bat
+```
+
+**자동화 스크립트 기능:**
+- ✅ 사전 요구사항 자동 확인 (Node.js, Java, Python, Mosquitto)
+- ✅ 포트 사용 상태 체크 (8080, 5173, 1883)
+- ✅ 모든 서비스 순차 시작 및 상태 확인
+- ✅ 로그 파일 자동 생성 (`logs/` 디렉토리)
+- ✅ 웹 브라우저 자동 열기 옵션
+- ✅ Ctrl+C로 모든 서비스 안전 종료
+
+---
+
+## 📋 수동 실행 (개발자용)
 
 ### 1. 가상환경 활성화
 ```bash
@@ -85,6 +117,12 @@ npm run dev
 - **백엔드 API**: http://localhost:8080/api/kpi/factory/summary
 
 ## 종료
+
+### 자동화 스크립트 사용 시
+- `Ctrl+C` (macOS) 또는 아무키 (Windows)
+- 모든 서비스가 자동으로 안전 종료됩니다
+
+### 수동 실행 시  
 - 각 터미널에서 `Ctrl+C`
 - 가상환경 비활성화: `deactivate`
 
