@@ -18,7 +18,7 @@ class MQTTClient:
         try:
             import yaml
             if os.path.exists(config_path):
-                with open(config_path, 'r') as f:
+                with open('config.yaml', 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
                     if 'mqtt' in config:
                         self.mqtt_config.update(config['mqtt'])
